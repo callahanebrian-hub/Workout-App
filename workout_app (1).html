@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Workout Tracker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --green: #1C4E3F; --green-mid: #2E7057; --green-light: #3D8A69;
+    --pink: #8A2C5F;
+    --bg: #F8F7F4; --card: #ffffff; --gray: #EEEBE4;
+    --text: #1A1A1A; --muted: #888888;
+    --radius: 14px; --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; max-width: 480px; margin: 0 auto; }
+
+  #user-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; }
+  .app-logo { width: 72px; height: 72px; background: var(--green); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(28,78,63,0.25); }
+  .app-logo svg { width: 38px; height: 38px; fill: white; }
+  #user-screen h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; text-align: center; }
+  #user-screen > p { color: var(--muted); font-size: 15px; margin-bottom: 40px; text-align: center; }
+  .user-card { width: 100%; background: var(--card); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 14px; display: flex; align-items: center; gap: 16px; cursor: pointer; border: 2px solid transparent; box-shadow: var(--shadow); transition: all 0.18s; }
+  .user-card:active { transform: scale(0.97); }
+  .user-card:hover { border-color: var(--green-light); }
+  .user-avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; flex-shrink: 0; }
+  .avatar-b { background: var(--green); }
+  .avatar-a { background: var(--pink); }
+  .user-info h3 { font-size: 17px; font-weight: 600; }
+  .user-info p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .user-arrow { margin-left: auto; color: var(--muted); font-size: 20px; }
+
+  #app { display: none; min-height: 100vh; flex-direction: column; }
+  .header { background: var(--green); padding: 52px 20px 16px; position: sticky; top: 0; z-index: 100; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .header-user { display: flex; align-items: center; gap: 10px; }
+  .header-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; border: 2px solid rgba(255,255,255,0.4); }
+  .header-name { color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 500; }
+  .switch-btn { background: rgba(255,255,255,0.15); border: none; color: white; font-size: 12px; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-weight: 500; }
+  .header h2 { color: white; font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .header-sub { color: rgba(255,255,255,0.65); font-size: 13px; }
+
+  .day-tabs-wrap { background: var(--green); position: sticky; top: 0; z-index: 99; }
+  .day-tabs { display: flex; overflow-x: auto; gap: 4px; padding: 0 16px; scrollbar-width: none; }
+  .day-tabs::-webkit-scrollbar { display: none; }
+  .day-tab { flex-shrink: 0; padding: 10px 16px 12px; background: transparent; border: none; color: rgba(255,255,255,0.6); font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 10px 10px 0 0; transition: all 0.15s; white-space: nowrap; }
+  .day-tab.active { background: var(--bg); color: var(--green); }
+  .rest-tab { opacity: 0.45; }
+
+  .content { flex: 1; padding: 16px; }
+
+  .progress-bar-wrap { background: var(--card); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .progress-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .progress-label span { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .progress-label strong { font-size: 13px; color: var(--green); font-weight: 700; }
+  .progress-track { height: 6px; background: var(--gray); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--green-light); border-radius: 3px; transition: width 0.35s ease; }
+
+  .day-label-pill { display: inline-block; background: #e8f5ee; color: var(--green-mid); font-size: 11px; font-weight: 700; border-radius: 6px; padding: 3px 10px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .exercise-card { background: var(--card); border-radius: var(--radius); margin-bottom: 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .exercise-card.all-done { opacity: 0.6; }
+  .exercise-card.all-done .ex-name { text-decoration: line-through; color: var(--muted); }
+  .ex-header { padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+  .ex-info { flex: 1; min-width: 0; }
+  .ex-name { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+  .ex-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .ex-muscle { font-size: 12px; color: var(--green-light); font-weight: 600; }
+  .ex-pill { background: var(--bg); border-radius: 6px; padding: 3px 8px; font-size: 12px; color: var(--muted); font-weight: 500; }
+  .ex-pill.done-pill { color: var(--green); background: #e8f5ee; }
+  .ex-pill.partial-pill { color: var(--green-mid); background: #e8f5ee; }
+  .ex-expand-btn { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; flex-shrink: 0; transition: transform 0.2s; line-height: 1; padding: 2px; }
+  .ex-expand-btn.open { transform: rotate(180deg); }
+
+  .sets-panel { display: none; border-top: 1px solid var(--gray); }
+  .sets-panel.open { display: block; }
+  .sets-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; padding: 12px 16px 6px; }
+  .sets-row { display: flex; gap: 8px; padding: 0 16px 14px; flex-wrap: wrap; }
+  .set-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 2px solid var(--gray); border-radius: 10px; padding: 8px 10px; cursor: pointer; transition: all 0.15s; min-width: 54px; font-family: inherit; }
+  .set-btn:active { transform: scale(0.9); }
+  .set-btn .snum { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .set-btn .scheck { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ccc; background: white; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .set-btn.done-set { background: #e8f5ee; border-color: var(--green-light); }
+  .set-btn.done-set .snum { color: var(--green-mid); }
+  .set-btn.done-set .scheck { background: var(--green); border-color: var(--green); }
+  .ck { display: none; }
+  .set-btn.done-set .ck { display: block; }
+
+  .desc-toggle { width: 100%; background: none; border: none; border-top: 1px solid var(--gray); color: var(--muted); font-size: 12px; font-weight: 600; padding: 10px 16px; text-align: left; cursor: pointer; font-family: inherit; display: flex; justify-content: space-between; align-items: center; }
+  .desc-section { display: none; padding: 12px 16px 16px; }
+  .desc-section.open { display: block; }
+  .ex-desc { font-size: 14px; color: #444; line-height: 1.65; margin-bottom: 12px; }
+  .video-btn { display: flex; align-items: center; gap: 8px; background: var(--green); color: white; border: none; border-radius: 10px; padding: 11px 16px; width: 100%; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; justify-content: center; }
+  .video-btn svg { width: 18px; height: 18px; fill: white; flex-shrink: 0; }
+
+  .rest-card { background: var(--card); border-radius: var(--radius); padding: 40px 24px; text-align: center; box-shadow: var(--shadow); }
+  .rest-icon { font-size: 48px; margin-bottom: 12px; }
+  .rest-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .rest-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  .eq-tag { display: inline-block; font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 6px; margin-left: 2px; text-transform: uppercase; letter-spacing: 0.4px; vertical-align: middle; }
+  .eq-cable { color: #1a5276; background: #d6eaf8; }
+  .eq-dumbbell { color: #4a235a; background: #e8daef; }
+  .eq-pullup { color: #1e4d2b; background: #d5f5e3; }
+  .eq-bw { color: #6b4c1e; background: #fdebd0; }
+</style>
+</head>
+<body>
+
+<div id="user-screen">
+  <div class="app-logo">
+    <svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z"/></svg>
+  </div>
+  <h1>Workout Tracker</h1>
+  <p>Who's working out today?</p>
+  <div class="user-card" onclick="selectUser('brian')">
+    <div class="user-avatar avatar-b">B</div>
+    <div class="user-info"><h3>Brian</h3><p>Strength · Mon/Tue/Wed/Thu/Fri</p></div>
+    <span class="user-arrow">›</span>
+  </div>
+  <div class="user-card" onclick="selectUser('ankita')">
+    <div class="user-avatar avatar-a">A</div>
+    <div class="user-info"><h3>Ankita</h3><p>HIIT · Tue lower · Thu upper</p></div>
+    <span class="user-arrow">›</span>
+  </div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="header-user">
+        <div class="header-avatar" id="hav"></div>
+        <span class="header-name" id="hname"></span>
+      </div>
+      <button class="switch-btn" onclick="switchUser()">Switch</button>
+    </div>
+    <h2>Weekly Plan</h2>
+    <div class="header-sub" id="wklabel"></div>
+  </div>
+  <div class="day-tabs-wrap"><div class="day-tabs" id="daytabs"></div></div>
+  <div class="content" id="content"></div>
+</div>
+
+<script>
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
+// ── BRIAN'S WORKOUTS ──────────────────────────────────────
+// Mon & Thu = same (Chest + Triceps)
+const BRIAN_CHEST_TRI = [
+  {id:"ct1", name:"Cable Chest Press (Flat)", muscle:"Chest", sets:3, reps:"8–10", eq:"cable",
+   desc:"Centr 2 pulleys at chest height. Stand centered, staggered stance. Press handles forward until arms extended. Keep shoulder blades retracted. Primary chest strength movement — go as heavy as clean form allows.",
+   video:"https://www.youtube.com/shorts/tGXIQR89-JE"},
+  {id:"ct2", name:"Incline Dumbbell Press", muscle:"Upper Chest", sets:3, reps:"8–10", eq:"dumbbell",
+   desc:"Bench at 30-45°. Press dumbbells from upper chest up and slightly inward. Lower slowly for a full stretch at the bottom. Great upper pec builder after the heavy cable pressing.",
+   video:"https://www.youtube.com/shorts/8fXfwG4ftaQ"},
+  {id:"ct3", name:"Incline Cable Chest Fly", muscle:"Upper Chest", sets:3, reps:"10–12", eq:"cable",
+   desc:"Centr 2 pulleys at lowest position, bench at 30-45°. Arms extended above upper chest, slight elbow bend. Lower in a wide arc feeling the upper pec stretch. Squeeze handles back together at the top.",
+   video:"https://www.youtube.com/shorts/tGXIQR89-JE"},
+  {id:"ct4", name:"Decline Cable Chest Fly", muscle:"Lower Chest", sets:3, reps:"10–12", eq:"cable",
+   desc:"Centr 2 pulleys at lowest position, bench on decline. Lower arms in a controlled arc feeling the lower pec stretch. Drive handles back up and together. Full squeeze at the top of every rep.",
+   video:"https://www.youtube.com/shorts/tGXIQR89-JE"},
+  {id:"ct5", name:"Cable Tricep Pushdown (Rope)", muscle:"Triceps", sets:3, reps:"10–12", eq:"cable",
+   desc:"Rope attachment, pulley at top. Elbows pinned to sides throughout. Push rope down and slightly outward to full lockout every rep. Return slowly. Primary tricep strength movement.",
+   video:"https://www.youtube.com/shorts/NvZKjiZ8NYc"},
+  {id:"ct6", name:"Overhead Cable Tricep Ext.", muscle:"Triceps", sets:3, reps:"10–12", eq:"cable",
+   desc:"Face away from cable, rope overhead. Lean slightly forward, elbows by ears. Extend arms forward to full lockout. Return with control. Best isolation for the long head of the tricep — the biggest part.",
+   video:"https://www.youtube.com/shorts/NTk0Igxqcsk"},
+];
+
+// Tue & Fri = same (Back + Shoulders + Biceps)
+const BRIAN_BACK_SHLD_BI = [
+  {id:"bs1", name:"Pull-Up", muscle:"Back", sets:3, reps:"Max reps", eq:"pullup",
+   desc:"Overhand grip, hands just outside shoulders. Full hang at the bottom every rep. Pull chest toward bar driving elbows down and back. Lower all the way. Primary back strength movement — track reps each set and beat last week.",
+   video:"https://www.youtube.com/shorts/eDP_OOhMTZ4"},
+  {id:"bs2", name:"Cable Lat Pulldown", muscle:"Back", sets:3, reps:"8–10", eq:"cable",
+   desc:"Wide overhand grip. Pull bar to upper chest driving elbows down toward hips. Squeeze lats hard at the bottom. Return bar slowly. Go heavy — this is your second main back movement.",
+   video:"https://www.youtube.com/watch?v=32auHIqgEoM"},
+  {id:"bs3", name:"Cable Seated Row", muscle:"Back", sets:3, reps:"10–12", eq:"cable",
+   desc:"Sit facing low cable, feet planted. Pull handle to lower abdomen driving elbows back. Squeeze shoulder blades hard at the end. Extend arms with full control between reps.",
+   video:"https://www.youtube.com/shorts/LyZH4UGdDTc"},
+  {id:"bs4", name:"Dumbbell Shoulder Press", muscle:"Shoulders", sets:3, reps:"8–10", eq:"dumbbell",
+   desc:"Seated or standing, dumbbells at ear height. Press straight overhead to full extension. Lower under control. Primary shoulder movement — go heavy and track your weights week to week.",
+   video:"https://www.youtube.com/shorts/k6tzKisR3NY"},
+  {id:"bs5", name:"Cable Lateral Raise", muscle:"Side Delts", sets:3, reps:"12–15", eq:"cable",
+   desc:"Low pulley, single handle. Stand sideways to cable. Raise arm out to side until parallel to floor, leading with elbow. Lower very slowly — cable keeps tension the whole way unlike dumbbells. Do both sides.",
+   video:"https://www.youtube.com/shorts/lMJUXEvcMkQ"},
+  {id:"bs6", name:"Cable Face Pull", muscle:"Rear Delts", sets:3, reps:"15–20", eq:"cable",
+   desc:"Rope at head height. Pull toward face, elbows flaring wide. Squeeze rear delts and externally rotate at the end. Non-negotiable for shoulder health. Never skip this on back days.",
+   video:"https://www.youtube.com/shorts/IeOqdw9WI90"},
+  {id:"bs7", name:"Cable Curl", muscle:"Biceps", sets:3, reps:"10–12", eq:"cable",
+   desc:"Low pulley, straight bar or EZ attachment. Curl from full extension to full contraction. Elbows fixed at sides. The cable keeps tension at the bottom stretch that dumbbells lose. Go heavier than dumbbell curls.",
+   video:"https://www.youtube.com/shorts/CrbTqNOlFgE"},
+  {id:"bs8", name:"Dumbbell Hammer Curl", muscle:"Biceps", sets:3, reps:"10–12", eq:"dumbbell",
+   desc:"Neutral grip (palms facing each other), curl both or alternate. Targets brachialis and brachioradialis — thickens the arm differently than regular curls. Lower slowly.",
+   video:"https://www.youtube.com/shorts/_aoad2yuP5w"},
+];
+
+// Wed = Legs only
+const BRIAN_LEGS = [
+  {id:"lg1", name:"Dumbbell Goblet Squat", muscle:"Quads / Glutes", sets:3, reps:"8–10", eq:"dumbbell",
+   desc:"Hold one heavy dumbbell vertically at chest. Feet shoulder-width, toes slightly out. Sit deep between heels, knees tracking over toes. Press back up through heels. Primary squat movement — go as heavy as possible with clean form.",
+   video:"https://www.youtube.com/shorts/lRYBbchqxtI"},
+  {id:"lg2", name:"Cable Romanian Deadlift", muscle:"Hamstrings / Glutes", sets:3, reps:"10–12", eq:"cable",
+   desc:"Low pulley, straight bar or rope. Stand facing cable. Hinge at hips pushing them back, feeling a deep hamstring stretch. Drive hips forward to return. Cable keeps tension at the bottom — great hamstring builder.",
+   video:"https://www.youtube.com/shorts/PnsKpt80S30"},
+  {id:"lg3", name:"Dumbbell Hip Thrust", muscle:"Glutes", sets:3, reps:"10–12", eq:"dumbbell",
+   desc:"Upper back on bench, heavy dumbbell across hips. Drive hips up to full extension. Squeeze glutes hard and hold 1 second at top. Lower under control. Treat this as a strength movement — go heavy.",
+   video:"https://www.youtube.com/shorts/CvuVYMFd11g"},
+  {id:"lg4", name:"Dumbbell Walking Lunge", muscle:"Quads / Glutes", sets:3, reps:"12 each leg", eq:"dumbbell",
+   desc:"Hold dumbbells at sides. Controlled step forward, lower back knee toward floor, front thigh parallel. Push through front heel to step into next rep. Torso upright throughout.",
+   video:"https://www.youtube.com/shorts/f7Aw2yiqmVs"},
+  {id:"lg5", name:"Cable Pull-Through", muscle:"Glutes / Hamstrings", sets:3, reps:"15", eq:"cable",
+   desc:"Stand facing away from cable, rope between legs at low pulley. Hinge forward at hips letting rope go back. Drive hips forward to return. Excellent glute activation and mind-muscle connection.",
+   video:"https://www.youtube.com/shorts/h1BEcRXkvxs"},
+  {id:"lg6", name:"Cable Standing Leg Curl", muscle:"Hamstrings", sets:3, reps:"12 each", eq:"cable",
+   desc:"Ankle strap on low cable. Stand facing machine, hold for balance. Curl heel toward glute squeezing hamstring at top. Lower slowly — the eccentric is where the growth is. Complete all reps one leg then switch.",
+   video:"https://www.youtube.com/shorts/UkU8fYyFzLU"},
+  {id:"lg7", name:"Dumbbell Bulgarian Split Squat", muscle:"Legs / Glutes", sets:3, reps:"8 each leg", eq:"dumbbell",
+   desc:"Rear foot on bench, front foot out. Lower until front thigh parallel. Drive through front heel. Harder than it looks — use less weight than you think. Builds single-leg strength and fixes imbalances.",
+   video:"https://www.youtube.com/shorts/or1frhkjBDc"},
+  {id:"lg8", name:"Cable Calf Raise", muscle:"Calves", sets:3, reps:"12–15", eq:"cable",
+   desc:"Hold cable handle lightly for balance or resistance. Stand on edge of a step. Full stretch at the bottom, full contraction and pause at the top. Don't bounce.",
+   video:"https://www.youtube.com/shorts/wdOkFomQNp8"},
+];
+
+// ── ANKITA'S WORKOUTS ─────────────────────────────────────
+// Tuesday = Lower body (HIIT-style, glutes/legs/thighs)
+const ANKITA_LOWER = [
+  {id:"al1", name:"Dumbbell Hip Thrust", muscle:"Glutes", sets:3, reps:"15", eq:"dumbbell",
+   desc:"Upper back on bench, heavy dumbbell across hips. Drive hips up to full extension. Squeeze glutes hard and hold 1 second at top. Lower with control. The #1 glute builder — don't rush it.",
+   video:"https://www.youtube.com/shorts/CvuVYMFd11g+women"},
+  {id:"al2", name:"Dumbbell Goblet Squat", muscle:"Quads / Glutes", sets:3, reps:"15", eq:"dumbbell",
+   desc:"Hold one heavy dumbbell at chest. Feet shoulder-width, toes slightly out. Sit deep between heels driving knees out. Press back up. Perfect squat pattern for all levels.",
+   video:"https://www.youtube.com/shorts/lRYBbchqxtI"},
+  {id:"al3", name:"Dumbbell Romanian Deadlift", muscle:"Hamstrings / Glutes", sets:3, reps:"12", eq:"dumbbell",
+   desc:"Dumbbells at hips. Hinge pushing hips back until you feel a deep hamstring stretch. Drive hips forward to return. Slow and controlled — build the mind-muscle connection, not just move weight.",
+   video:"https://www.youtube.com/shorts/oQwnGfZFfzw"},
+  {id:"al4", name:"Dumbbell Walking Lunge", muscle:"Thighs / Glutes", sets:3, reps:"12 each leg", eq:"dumbbell",
+   desc:"Hold dumbbells at sides. Step forward into lunge, back knee nearly touching floor. Drive through front foot to step into next rep. Keep torso upright throughout.",
+   video:"https://www.youtube.com/shorts/f7Aw2yiqmVs+women"},
+  {id:"al5", name:"Cable Glute Kickback", muscle:"Glutes", sets:3, reps:"15 each", eq:"cable",
+   desc:"Ankle strap on low cable, stand facing machine. Kick leg back and up squeezing glute at the top. Control the return — don't let it drop. Targets the upper portion of the glute.",
+   video:"https://www.youtube.com/shorts/n-cgsNePyFo"},
+  {id:"al6", name:"Cable Standing Leg Curl", muscle:"Hamstrings", sets:3, reps:"15 each", eq:"cable",
+   desc:"Ankle strap on low cable, face machine. Curl heel toward glute squeezing hamstring at top. Lower slowly. Do all reps one leg then switch. Replaces the leg curl machine.",
+   video:"https://www.youtube.com/shorts/UkU8fYyFzLU+women"},
+  {id:"al7", name:"Curtsy Lunge", muscle:"Glutes / Inner Thighs", sets:3, reps:"12 each", eq:"dumbbell",
+   desc:"Hold dumbbells. Step one foot behind and across into a curtsy. Lower back knee toward floor. Return to standing. Targets glute medius and inner thigh in a way regular lunges miss entirely.",
+   video:"https://www.youtube.com/shorts/WAW-2ehQ1GM"},
+  {id:"al8", name:"Jump Squat", muscle:"Full Body / Cardio", sets:3, reps:"15", eq:"bw",
+   desc:"Squat down then explode up jumping as high as possible. Land softly bending knees to absorb. The HIIT finisher — elevates heart rate fast. Rest 30 sec between sets.",
+   video:"https://www.youtube.com/shorts/h5TmdMMtIT4"},
+];
+
+// Thursday = Upper body (HIIT-style, full body compound + core)
+const ANKITA_UPPER = [
+  {id:"au1", name:"Dumbbell Push Press", muscle:"Shoulders / Full Body", sets:3, reps:"12", eq:"dumbbell",
+   desc:"Dumbbells at shoulders. Dip slightly at knees then drive them up pressing weights overhead. Leg drive makes this heavier and more explosive than a strict press. Great full-body movement.",
+   video:"https://www.youtube.com/shorts/Cj96ZZlmJRU"},
+  {id:"au2", name:"Cable Lat Pulldown", muscle:"Back", sets:3, reps:"12", eq:"cable",
+   desc:"Wide grip, pull bar to upper chest driving elbows down and back. Squeeze lats at the bottom. Return slowly. Back width creates the appearance of a smaller waist.",
+   video:"https://www.youtube.com/watch?v=32auHIqgEoM+women"},
+  {id:"au3", name:"Cable Seated Row", muscle:"Back / Biceps", sets:3, reps:"12", eq:"cable",
+   desc:"Sit facing low cable. Pull handle to lower abdomen driving elbows back. Squeeze shoulder blades at the end. Extend arms with control. Works back and biceps together.",
+   video:"https://www.youtube.com/shorts/LyZH4UGdDTc+women"},
+  {id:"au4", name:"Dumbbell Squat to Press", muscle:"Full Body", sets:3, reps:"12", eq:"dumbbell",
+   desc:"Dumbbells at shoulders. Squat down, as you stand press the weights overhead in one fluid motion. Legs and shoulders combined — efficient and effective full-body HIIT movement.",
+   video:"https://www.youtube.com/shorts/5iYHZ61Fjo4"},
+  {id:"au5", name:"Burpee", muscle:"Full Body / Cardio", sets:3, reps:"12", eq:"bw",
+   desc:"Stand, drop hands to floor, jump feet back to plank, push-up, jump feet in, explode up overhead. The definitive HIIT move. Step instead of jump to modify.",
+   video:"https://www.youtube.com/shorts/AuwNiGTjavM"},
+  {id:"au6", name:"Cable Face Pull", muscle:"Rear Delts / Shoulders", sets:3, reps:"15", eq:"cable",
+   desc:"Rope at head height. Pull toward face with elbows flaring wide. Squeeze rear delts and externally rotate. Great for shoulder health and posture — especially important for anyone who sits at a desk.",
+   video:"https://www.youtube.com/shorts/IeOqdw9WI90+women"},
+  {id:"au7", name:"Bicycle Crunch", muscle:"Core / Obliques", sets:3, reps:"20", eq:"bw",
+   desc:"Hands behind head, legs off ground. Opposite elbow to opposite knee while extending the other leg. Slow and controlled — don't just crank through. Feel the oblique working each rep.",
+   video:"https://www.youtube.com/shorts/cFDS2S6Vqis"},
+  {id:"au8", name:"Cable Crunch", muscle:"Core", sets:3, reps:"15", eq:"cable",
+   desc:"Kneel facing cable, rope at high pulley beside head. Crunch elbows toward knees rounding the spine. The cable adds real load that bodyweight crunches can't match. Great core finisher.",
+   video:"https://www.youtube.com/shorts/ByZJuk85YuE"},
+];
+
+// ── BUILD SCHEDULE ────────────────────────────────────────
+// Duplicate the same exercise objects with unique IDs per day
+function cloneForDay(arr, daySuffix) {
+  return arr.map(ex => ({ ...ex, id: ex.id + '_' + daySuffix }));
+}
+
+const EX = {
+  brian: {
+    Monday:    cloneForDay(BRIAN_CHEST_TRI,    'mon'),
+    Tuesday:   cloneForDay(BRIAN_BACK_SHLD_BI, 'tue'),
+    Wednesday: cloneForDay(BRIAN_LEGS,         'wed'),
+    Thursday:  cloneForDay(BRIAN_CHEST_TRI,    'thu'),
+    Friday:    cloneForDay(BRIAN_BACK_SHLD_BI, 'fri'),
+    Saturday:  [],
+    Sunday:    [],
+  },
+  ankita: {
+    Monday:    [],
+    Tuesday:   cloneForDay(ANKITA_LOWER, 'tue'),
+    Wednesday: [],
+    Thursday:  cloneForDay(ANKITA_UPPER, 'thu'),
+    Friday:    [],
+    Saturday:  [],
+    Sunday:    [],
+  }
+};
+
+const DAY_LABEL = {
+  brian: {
+    Monday:"Chest + Triceps", Tuesday:"Back + Shoulders + Biceps",
+    Wednesday:"Legs", Thursday:"Chest + Triceps",
+    Friday:"Back + Shoulders + Biceps", Saturday:"Rest", Sunday:"Rest"
+  },
+  ankita: {
+    Monday:"Rest", Tuesday:"Lower Body · Glutes + Legs",
+    Wednesday:"Rest", Thursday:"Upper Body · HIIT",
+    Friday:"Rest", Saturday:"Rest", Sunday:"Rest"
+  }
+};
+
+const REST_MSG = {
+  brian: { Saturday:"Rest day. Recover and eat well.", Sunday:"Full rest. Ready for Monday." },
+  ankita: {
+    Monday:"Rest day. Recover from the week.", Wednesday:"Rest day — halfway there.",
+    Friday:"Rest day. Great week.", Saturday:"Rest day.", Sunday:"Full rest."
+  }
+};
+
+const EQ_META = {
+  cable:   { label:"Cable",      cls:"eq-cable"   },
+  dumbbell:{ label:"Dumbbell",   cls:"eq-dumbbell" },
+  pullup:  { label:"Pull-up bar",cls:"eq-pullup"  },
+  bw:      { label:"Bodyweight", cls:"eq-bw"      },
+};
+
+// ── WEEKLY RESET ──────────────────────────────────────────
+// Stores the Monday date of the current week. If it changes, wipes all set data.
+function getMondayStr() {
+  const now = new Date();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  return mon.toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+const thisWeek = getMondayStr();
+const savedWeek = localStorage.getItem('wt-week');
+if (savedWeek !== thisWeek) {
+  localStorage.removeItem('wt-v4');
+  localStorage.setItem('wt-week', thisWeek);
+}
+
+// ── STATE ─────────────────────────────────────────────────
+let cu = null, cd = null;
+let sd = JSON.parse(localStorage.getItem('wt-v4') || '{}');
+function saveSd() { localStorage.setItem('wt-v4', JSON.stringify(sd)); }
+function initU(u) { if (!sd[u]) sd[u] = {}; }
+function isDone(u,eid,i) { return !!(sd[u]&&sd[u][eid]&&sd[u][eid][i]); }
+function toggleS(u,eid,i) { initU(u); if(!sd[u][eid])sd[u][eid]={}; sd[u][eid][i]=!sd[u][eid][i]; saveSd(); }
+function setsDone(u,ex) { let c=0; for(let i=0;i<ex.sets;i++) if(isDone(u,ex.id,i))c++; return c; }
+function allDone(u,ex) { return setsDone(u,ex)===ex.sets; }
+function dayProg(u,day) {
+  let total=0, done=0;
+  EX[u][day].forEach(ex=>{ total+=ex.sets; done+=setsDone(u,ex); });
+  return {total,done};
+}
+
+function selectUser(u) {
+  cu=u; initU(u);
+  document.getElementById('user-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  const isA = u==='ankita';
+  document.getElementById('hav').textContent = isA?'A':'B';
+  document.getElementById('hav').style.background = isA?'#8A2C5F':'#1C4E3F';
+  document.getElementById('hname').textContent = isA?'Ankita':'Brian';
+  const now=new Date(), mon=new Date(now);
+  mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const f=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  document.getElementById('wklabel').textContent=`Week of ${f(mon)} – ${f(sun)}`;
+  const ti=(new Date().getDay()+6)%7;
+  cd = DAYS[Math.min(ti,6)];
+  buildTabs(); renderDay(cd);
+}
+
+function switchUser() {
+  cu=null; cd=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('user-screen').style.display='flex';
+}
+
+function buildTabs() {
+  const wrap=document.getElementById('daytabs'); wrap.innerHTML='';
+  DAYS.forEach(day=>{
+    const isRest = EX[cu][day].length===0;
+    const btn=document.createElement('button');
+    btn.className='day-tab'+(isRest?' rest-tab':'')+(day===cd?' active':'');
+    btn.textContent=day.slice(0,3);
+    btn.onclick=()=>{
+      cd=day;
+      document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active'));
+      btn.classList.add('active');
+      renderDay(day);
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function renderDay(day) {
+  const exs=EX[cu][day], c=document.getElementById('content');
+  const label = DAY_LABEL[cu][day] || '';
+
+  if (!exs.length) {
+    const msg = (REST_MSG[cu]&&REST_MSG[cu][day]) || 'Rest day. Recover well.';
+    c.innerHTML=`<div class="rest-card"><div class="rest-icon">😴</div><h3>${label}</h3><p>${msg}</p></div>`;
+    return;
+  }
+
+  const {total,done}=dayProg(cu,day);
+  const pct=total>0?Math.round(done/total*100):0;
+
+  let h=`<div class="day-label-pill">${label}</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-label"><span>${day}'s Workout</span><strong id="prog-lbl">${done}/${total} sets done</strong></div>
+      <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:${pct}%"></div></div>
+    </div>`;
+
+  exs.forEach(ex=>{
+    const dc=setsDone(cu,ex), ad=allDone(cu,ex);
+    const eq=EQ_META[ex.eq]||{label:ex.eq,cls:''};
+    let pills=`<span class="ex-muscle">${ex.muscle}</span><span class="ex-pill">${ex.sets} sets · ${ex.reps} reps</span><span class="eq-tag ${eq.cls}">${eq.label}</span>`;
+    if(ad) pills+=`<span class="ex-pill done-pill" id="pill-${ex.id}">✓ Complete</span>`;
+    else if(dc>0) pills+=`<span class="ex-pill partial-pill" id="pill-${ex.id}">${dc}/${ex.sets} sets</span>`;
+    else pills+=`<span class="ex-pill" id="pill-${ex.id}" style="display:none"></span>`;
+
+    let setbtns='';
+    for(let i=0;i<ex.sets;i++){
+      const s=isDone(cu,ex.id,i);
+      setbtns+=`<button class="set-btn ${s?'done-set':''}" id="sb-${ex.id}-${i}" onclick="tapSet('${ex.id}',${i})">
+        <span class="snum">Set ${i+1}</span>
+        <div class="scheck"><svg class="ck" viewBox="0 0 24 24" width="13" height="13"><path fill="white" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>
+      </button>`;
+    }
+
+    h+=`<div class="exercise-card ${ad?'all-done':''}" id="card-${ex.id}">
+      <div class="ex-header" onclick="toggleExp('${ex.id}')">
+        <div class="ex-info">
+          <div class="ex-name" id="name-${ex.id}">${ex.name}</div>
+          <div class="ex-meta">${pills}</div>
+        </div>
+        <button class="ex-expand-btn" id="ebtn-${ex.id}">⌄</button>
+      </div>
+      <div class="sets-panel" id="sp-${ex.id}">
+        <div class="sets-label">Tap each set when complete</div>
+        <div class="sets-row">${setbtns}</div>
+        <button class="desc-toggle" onclick="toggleDesc('${ex.id}')">
+          <span>Exercise description &amp; video</span>
+          <span id="dtoggle-${ex.id}">↓</span>
+        </button>
+        <div class="desc-section" id="ds-${ex.id}">
+          <p class="ex-desc">${ex.desc}</p>
+          <a class="video-btn" href="${ex.video}" target="_blank">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Video Tutorial
+          </a>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  c.innerHTML=h;
+}
+
+function toggleExp(eid) {
+  const sp=document.getElementById('sp-'+eid), eb=document.getElementById('ebtn-'+eid);
+  const wasOpen=sp.classList.contains('open');
+  document.querySelectorAll('.sets-panel').forEach(p=>p.classList.remove('open'));
+  document.querySelectorAll('.ex-expand-btn').forEach(b=>b.classList.remove('open'));
+  if(!wasOpen){ sp.classList.add('open'); eb.classList.add('open'); }
+}
+
+function toggleDesc(eid) {
+  const ds=document.getElementById('ds-'+eid), tog=document.getElementById('dtoggle-'+eid);
+  ds.classList.toggle('open');
+  tog.textContent=ds.classList.contains('open')?'↑':'↓';
+}
+
+function tapSet(eid, idx) {
+  toggleS(cu, eid, idx);
+  const s=isDone(cu,eid,idx);
+  document.getElementById(`sb-${eid}-${idx}`).classList.toggle('done-set',s);
+
+  const ex=EX[cu][cd].find(e=>e.id===eid); if(!ex)return;
+  const dc=setsDone(cu,ex), ad=allDone(cu,ex);
+
+  document.getElementById('card-'+eid).classList.toggle('all-done',ad);
+  const nameEl=document.getElementById('name-'+eid);
+  nameEl.style.textDecoration=ad?'line-through':'';
+  nameEl.style.color=ad?'var(--muted)':'';
+
+  const pill=document.getElementById('pill-'+eid);
+  if(pill){
+    pill.className='ex-pill'+(ad?' done-pill':(dc>0?' partial-pill':''));
+    pill.style.display=dc>0||ad?'':'none';
+    pill.textContent=ad?'✓ Complete':`${dc}/${ex.sets} sets`;
+  }
+
+  const {total,done}=dayProg(cu,cd);
+  const pct=total>0?Math.round(done/total*100):0;
+  const fill=document.getElementById('prog-fill'), lbl=document.getElementById('prog-lbl');
+  if(fill)fill.style.width=pct+'%';
+  if(lbl)lbl.textContent=`${done}/${total} sets done`;
+}
+</script>
+</body>
+</html>
