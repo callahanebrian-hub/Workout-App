@@ -153,6 +153,48 @@
 
   /* Profile button on user card */
   .profile-btn { margin-top: 6px; background: none; border: none; color: var(--green-mid); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 0; text-decoration: underline; }
+
+  /* ── WEIGHT INPUT ── */
+  .weight-row { display: flex; gap: 8px; padding: 0 16px 14px; align-items: center; flex-wrap: wrap; }
+  .weight-input-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 72px; }
+  .weight-input-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .weight-input { width: 72px; padding: 7px 8px; border: 2px solid var(--gray); border-radius: 8px; font-size: 13px; font-weight: 700; text-align: center; background: var(--bg); color: var(--text); font-family: inherit; outline: none; }
+  .weight-input:focus { border-color: var(--green-light); background: white; }
+  .weight-input.pr-set { border-color: #f0a500; background: #fffbf0; }
+  .weight-prev { font-size: 10px; color: var(--muted); text-align: center; }
+  .weight-prev.has-pr { color: #f0a500; font-weight: 700; }
+
+  /* ── STREAK BANNER ── */
+  .streak-banner { background: linear-gradient(135deg, #1C4E3F, #2E7057); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow); }
+  .streak-fire { font-size: 28px; }
+  .streak-text h3 { color: white; font-size: 16px; font-weight: 700; }
+  .streak-text p { color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 2px; }
+  .streak-count { margin-left: auto; background: rgba(255,255,255,0.15); border-radius: 10px; padding: 6px 12px; color: white; font-size: 20px; font-weight: 800; }
+
+  /* ── PR BADGE ── */
+  .pr-badge { display: inline-flex; align-items: center; gap: 4px; background: #fff8e1; color: #f0a500; border: 1.5px solid #f0a500; border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 800; margin-left: 4px; }
+
+  /* ── COMPLETION OVERLAY ── */
+  .completion-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; }
+  .completion-overlay.show { display: flex; }
+  .completion-card { background: white; border-radius: 24px; padding: 40px 32px; text-align: center; max-width: 320px; width: 90%; position: relative; animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes popIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .completion-emoji { font-size: 64px; margin-bottom: 16px; display: block; }
+  .completion-card h2 { font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+  .completion-card p { font-size: 15px; color: var(--muted); line-height: 1.5; margin-bottom: 24px; }
+  .completion-stats { display: flex; gap: 12px; margin-bottom: 24px; }
+  .completion-stat { flex: 1; background: var(--bg); border-radius: 12px; padding: 12px 8px; }
+  .completion-stat .cs-val { font-size: 20px; font-weight: 800; color: var(--green); }
+  .completion-stat .cs-lbl { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+  .completion-dismiss { background: var(--green); color: white; border: none; border-radius: 12px; padding: 14px 32px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; font-family: inherit; }
+  .confetti-piece { position: fixed; width: 10px; height: 10px; border-radius: 2px; animation: confettiFall linear forwards; pointer-events: none; z-index: 1001; }
+  @keyframes confettiFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+  /* ── STREAK on profile ── */
+  .streak-stat { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .streak-stat .fire { font-size: 22px; }
+  .streak-stat .streak-info h4 { font-size: 15px; font-weight: 700; }
+  .streak-stat .streak-info p { font-size: 12px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -168,6 +210,29 @@
   </div>
 </div>
 
+
+<div class="completion-overlay" id="completion-overlay">
+  <div class="completion-card">
+    <span class="completion-emoji" id="comp-emoji">🎉</span>
+    <h2 id="comp-title">Workout Complete!</h2>
+    <p id="comp-msg"></p>
+    <div class="completion-stats">
+      <div class="completion-stat">
+        <div class="cs-val" id="comp-sets">0</div>
+        <div class="cs-lbl">Sets done</div>
+      </div>
+      <div class="completion-stat">
+        <div class="cs-val" id="comp-prs">0</div>
+        <div class="cs-lbl">New PRs 🏆</div>
+      </div>
+      <div class="completion-stat">
+        <div class="cs-val" id="comp-streak">0🔥</div>
+        <div class="cs-lbl">Week streak</div>
+      </div>
+    </div>
+    <button class="completion-dismiss" onclick="dismissCompletion()">Let's go! 💪</button>
+  </div>
+</div>
 <div class="profile-screen" id="profile-screen">
   <div class="profile-header">
     <div class="profile-header-top">
@@ -522,7 +587,15 @@ function renderDay(day) {
   const {total,done}=dayProg(cu,day);
   const pct=total>0?Math.round(done/total*100):0;
 
+  const streak = getStreak(cu);
+  const streakHtml = streak > 0 ? `<div class="streak-banner">
+    <span class="streak-fire">🔥</span>
+    <div class="streak-text"><h3>${streak} week streak!</h3><p>Keep it going — don't break the chain</p></div>
+    <span class="streak-count">${streak}</span>
+  </div>` : '';
+
   let h=`<div class="day-label-pill">${label}</div>
+    ${streakHtml}
     <div class="progress-bar-wrap">
       <div class="progress-label"><span>${day}'s Workout</span><strong id="prog-lbl">${done}/${total} sets done</strong></div>
       <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:${pct}%"></div></div>
@@ -537,12 +610,23 @@ function renderDay(day) {
     else pills+=`<span class="ex-pill" id="pill-${ex.id}" style="display:none"></span>`;
 
     let setbtns='';
+    const exWts = getWeights(cu, ex.id);
+    const prevWts = getPrevWeights(cu, ex.id);
+    const exPRs = getPRs(cu, ex.id);
     for(let i=0;i<ex.sets;i++){
       const s=isDone(cu,ex.id,i);
-      setbtns+=`<button class="set-btn ${s?'done-set':''}" id="sb-${ex.id}-${i}" onclick="tapSet('${ex.id}',${i})">
-        <span class="snum">Set ${i+1}</span>
-        <div class="scheck"><svg class="ck" viewBox="0 0 24 24" width="13" height="13"><path fill="white" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>
-      </button>`;
+      const wVal = exWts[i] || '';
+      const prevW = prevWts[i] || '';
+      const isPR = exPRs[i] || false;
+      const prevLabel = prevW ? `Last: ${prevW}lbs` : 'First time';
+      setbtns+=`<div class="weight-input-wrap">
+        <span class="weight-input-label">Set ${i+1}</span>
+        <button class="set-btn ${s?'done-set':''}" id="sb-${ex.id}-${i}" onclick="tapSet('${ex.id}',${i})" style="margin:0">
+          <div class="scheck"><svg class="ck" viewBox="0 0 24 24" width="13" height="13"><path fill="white" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>
+        </button>
+        <input class="weight-input ${isPR?'pr-set':''}" id="wi-${ex.id}-${i}" type="number" placeholder="lbs" value="${wVal}" onchange="saveWeight('${ex.id}',${i},this.value)" onclick="this.select()">
+        <span class="weight-prev ${isPR?'has-pr':''}" id="wp-${ex.id}-${i}">${isPR?'🏆 PR!':prevLabel}</span>
+      </div>`;
     }
 
     h+=`<div class="exercise-card ${ad?'all-done':''}" id="card-${ex.id}">
@@ -555,7 +639,7 @@ function renderDay(day) {
       </div>
       <div class="sets-panel" id="sp-${ex.id}">
         <div class="sets-label">Tap each set when complete</div>
-        <div class="sets-row">${setbtns}</div>
+        <div class="weight-row">${setbtns}</div>
         <button class="desc-toggle" onclick="toggleDesc('${ex.id}')">
           <span>Exercise description &amp; video</span>
           <span id="dtoggle-${ex.id}">↓</span>
@@ -614,6 +698,11 @@ function tapSet(eid, idx) {
   const fill=document.getElementById('prog-fill'), lbl=document.getElementById('prog-lbl');
   if(fill)fill.style.width=pct+'%';
   if(lbl)lbl.textContent=`${done}/${total} sets done`;
+
+  // Check if entire day is complete
+  if(done === total && total > 0) {
+    setTimeout(() => showCompletion(cu, cd), 400);
+  }
 }
 
 // ── VIDEO PLAYER ──────────────────────────────────────────
@@ -794,6 +883,150 @@ function openProfile(u) {
 function closeProfile() {
   document.getElementById('profile-screen').style.display = 'none';
   document.getElementById('user-screen').style.display = 'flex';
+}
+
+// ── WEIGHT TRACKING ───────────────────────────────────────
+function getWeights(u, eid) {
+  const w = JSON.parse(localStorage.getItem('wt-weights-' + thisWeek) || '{}');
+  return (w[u] && w[u][eid]) || {};
+}
+
+function getPrevWeights(u, eid) {
+  const prevKey = getMondayStr(1);
+  const w = JSON.parse(localStorage.getItem('wt-weights-' + prevKey) || '{}');
+  return (w[u] && w[u][eid]) || {};
+}
+
+function getPRs(u, eid) {
+  // Returns {setIdx: true} for any set that's a new PR this week
+  const cur = getWeights(u, eid);
+  const prev = getPrevWeights(u, eid);
+  const prs = {};
+  Object.keys(cur).forEach(i => {
+    const cw = parseFloat(cur[i]) || 0;
+    const pw = parseFloat(prev[i]) || 0;
+    if (cw > 0 && cw > pw) prs[i] = true;
+  });
+  return prs;
+}
+
+function saveWeight(eid, idx, val) {
+  const key = 'wt-weights-' + thisWeek;
+  const w = JSON.parse(localStorage.getItem(key) || '{}');
+  if (!w[cu]) w[cu] = {};
+  if (!w[cu][eid]) w[cu][eid] = {};
+  w[cu][eid][idx] = val;
+  localStorage.setItem(key, JSON.stringify(w));
+
+  // Check PR
+  const prev = getPrevWeights(cu, eid);
+  const prevW = parseFloat(prev[idx]) || 0;
+  const curW = parseFloat(val) || 0;
+  const isPR = curW > 0 && curW > prevW;
+
+  const inputEl = document.getElementById(`wi-${eid}-${idx}`);
+  const prevEl = document.getElementById(`wp-${eid}-${idx}`);
+  if (inputEl) inputEl.classList.toggle('pr-set', isPR);
+  if (prevEl) {
+    prevEl.classList.toggle('has-pr', isPR);
+    prevEl.textContent = isPR ? '🏆 PR!' : (prevW > 0 ? `Last: ${prevW}lbs` : 'First time');
+  }
+}
+
+// ── STREAK TRACKING ────────────────────────────────────────
+function getStreak(u) {
+  // Count consecutive weeks where user completed at least one workout day
+  let streak = 0;
+  // Check this week first
+  const thisData = JSON.parse(localStorage.getItem('wt-v4') || '{}')[u] || {};
+  const thisHasWork = Object.values(thisData).some(ex => Object.values(ex).some(Boolean));
+  if (thisHasWork) streak++;
+
+  // Check previous weeks
+  for (let w = 1; w <= 52; w++) {
+    const weekKey = getMondayStr(w);
+    const histData = JSON.parse(localStorage.getItem('wt-history-' + weekKey) || '{}');
+    const userData = histData[u] || {};
+    const hasWork = Object.values(userData).some(ex => Object.values(ex).some(Boolean));
+    if (hasWork) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function saveStreakCompletion(u) {
+  const completedDays = JSON.parse(localStorage.getItem('wt-completed-days') || '{}');
+  if (!completedDays[u]) completedDays[u] = [];
+  if (!completedDays[u].includes(cd)) {
+    completedDays[u].push(cd);
+    localStorage.setItem('wt-completed-days', JSON.stringify(completedDays));
+  }
+}
+
+// ── PR COUNT FOR DAY ───────────────────────────────────────
+function countDayPRs(u, day) {
+  const exs = EX[u][day];
+  let prs = 0;
+  exs.forEach(ex => {
+    const p = getPRs(u, ex.id);
+    prs += Object.keys(p).length;
+  });
+  return prs;
+}
+
+// ── COMPLETION CELEBRATION ─────────────────────────────────
+function showCompletion(u, day) {
+  saveStreakCompletion(u);
+  const {total} = dayProg(u, day);
+  const prs = countDayPRs(u, day);
+  const streak = getStreak(u);
+  const label = DAY_LABEL[u][day] || day;
+  const isAnkita = u === 'ankita';
+
+  const msgs = [
+    `${label} is done. Beast mode activated. 💪`,
+    `You crushed ${label}. Same time next week!`,
+    `${label} complete. Your future self thanks you.`,
+    `That's a wrap on ${label}. Go eat something good.`
+  ];
+  const msg = msgs[Math.floor(Math.random() * msgs.length)];
+  const emojis = ['🎉','🏋️','💥','🔥','⚡'];
+  const emoji = isAnkita ? '💃' : emojis[Math.floor(Math.random() * emojis.length)];
+
+  document.getElementById('comp-emoji').textContent = emoji;
+  document.getElementById('comp-title').textContent = 'Workout Complete!';
+  document.getElementById('comp-msg').textContent = msg;
+  document.getElementById('comp-sets').textContent = total;
+  document.getElementById('comp-prs').textContent = prs;
+  document.getElementById('comp-streak').textContent = streak + '🔥';
+
+  document.getElementById('completion-overlay').classList.add('show');
+  launchConfetti();
+}
+
+function dismissCompletion() {
+  document.getElementById('completion-overlay').classList.remove('show');
+}
+
+function launchConfetti() {
+  const colors = ['#1C4E3F','#3D8A69','#f0a500','#e74c3c','#3498db','#9b59b6','#2ecc71'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.cssText = `
+        left: ${Math.random() * 100}vw;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        width: ${6 + Math.random() * 8}px;
+        height: ${6 + Math.random() * 8}px;
+        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+        animation-duration: ${1.5 + Math.random() * 2}s;
+        animation-delay: ${Math.random() * 0.5}s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }, i * 20);
+  }
 }
 </script>
 </body>
