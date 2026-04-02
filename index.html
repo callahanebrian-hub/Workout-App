@@ -336,6 +336,51 @@
   /* Share button in profile */
   .share-week-btn { width: 100%; background: var(--green); color: white; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .share-week-btn svg { width: 16px; height: 16px; fill: white; }
+
+  /* ── FLOATING TIMER BUTTON ── */
+  .float-timer-btn { position: fixed; bottom: 28px; right: 20px; width: 58px; height: 58px; border-radius: 50%; background: var(--green); border: none; box-shadow: 0 4px 16px rgba(28,78,63,0.35); cursor: pointer; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 2px; z-index: 200; transition: transform 0.15s; }
+  .float-timer-btn.visible { display: flex; }
+  .float-timer-btn:active { transform: scale(0.92); }
+  .float-timer-icon { width: 22px; height: 22px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; }
+  .float-timer-label { color: white; font-size: 9px; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; }
+  .float-timer-btn.running { background: #c0392b; }
+  .float-timer-btn.running .float-timer-label { content: 'STOP'; }
+
+  /* ── STANDALONE TIMER SHEET ── */
+  .standalone-timer-overlay { display: none; position: fixed; inset: 0; z-index: 998; align-items: flex-end; justify-content: center; pointer-events: none; }
+  .standalone-timer-overlay.active { display: flex; pointer-events: all; }
+  .standalone-sheet { background: white; border-radius: 28px 28px 0 0; padding: 20px 24px 44px; width: 100%; max-width: 480px; box-shadow: 0 -8px 40px rgba(0,0,0,0.18); animation: slideUp 0.3s cubic-bezier(0.34,1.1,0.64,1); }
+  .standalone-handle { width: 40px; height: 4px; background: var(--gray); border-radius: 2px; margin: 0 auto 20px; }
+  .standalone-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; text-align: center; margin-bottom: 20px; }
+
+  /* Duration presets */
+  .duration-presets { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+  .dur-preset { background: var(--bg); border: 2px solid var(--gray); border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .dur-preset:active { transform: scale(0.93); }
+  .dur-preset.selected { background: #e8f5ee; border-color: var(--green-light); color: var(--green); }
+
+  /* Custom duration row */
+  .custom-dur-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 24px; }
+  .dur-adj-btn { background: var(--bg); border: 2px solid var(--gray); border-radius: 10px; width: 42px; height: 42px; font-size: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); font-family: inherit; transition: all 0.15s; }
+  .dur-adj-btn:active { transform: scale(0.9); background: var(--gray); }
+  .dur-display { font-size: 42px; font-weight: 800; color: var(--text); min-width: 100px; text-align: center; letter-spacing: -1px; }
+  .dur-display span { font-size: 16px; font-weight: 500; color: var(--muted); margin-left: 4px; }
+
+  /* Big start button */
+  .standalone-start-btn { width: 100%; background: var(--green); color: white; border: none; border-radius: 16px; padding: 18px; font-size: 18px; font-weight: 800; cursor: pointer; font-family: inherit; letter-spacing: -0.3px; transition: all 0.15s; }
+  .standalone-start-btn:active { transform: scale(0.97); }
+  .standalone-cancel { width: 100%; background: none; border: none; color: var(--muted); font-size: 14px; font-weight: 600; padding: 12px; cursor: pointer; font-family: inherit; margin-top: 4px; }
+
+  /* Countdown state of standalone timer */
+  .standalone-countdown-wrap { text-align: center; padding: 10px 0 20px; }
+  .standalone-big-num { font-size: 88px; font-weight: 800; color: var(--text); letter-spacing: -4px; line-height: 1; transition: color 0.3s; }
+  .standalone-big-num.urgent { color: #c0392b; }
+  .standalone-big-label { font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; margin-top: 4px; }
+  .standalone-stop-btn { width: 100%; background: #c0392b; color: white; border: none; border-radius: 16px; padding: 18px; font-size: 18px; font-weight: 800; cursor: pointer; font-family: inherit; margin-top: 8px; }
+  .standalone-stop-btn:active { transform: scale(0.97); }
+  .standalone-add-time { display: flex; gap: 8px; margin-bottom: 16px; }
+  .add-time-btn { flex: 1; background: var(--bg); border: 2px solid var(--gray); border-radius: 12px; padding: 10px; font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer; font-family: inherit; }
+  .add-time-btn:active { background: var(--gray); }
 </style>
 </head>
 <body>
@@ -344,8 +389,20 @@
 <div class="video-modal" id="video-modal">
   <div class="video-modal-inner">
     <div class="video-modal-title" id="video-modal-title"></div>
-    <div class="video-wrapper">
-      <iframe id="video-iframe" allowfullscreen allow="autoplay"></iframe>
+    <div class="video-wrapper" id="video-wrapper">
+      <iframe id="video-iframe" allowfullscreen allow="autoplay; encrypted-media" playsinline
+        onload="checkIframeLoad(this)"
+        onerror="showVideoFallback()">
+      </iframe>
+      <div id="video-blocked" style="display:none;position:absolute;inset:0;background:#111;border-radius:12px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
+        <div style="color:rgba(255,255,255,0.5);font-size:13px;text-align:center;line-height:1.5;">This video can't be played<br>inside the app.</div>
+        <a id="video-fallback-btn" href="" target="_blank"
+          style="background:white;color:#1A1A1A;font-size:14px;font-weight:700;padding:12px 24px;border-radius:12px;text-decoration:none;display:flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#c0392b"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+          Open in YouTube
+        </a>
+        <button onclick="closeVideo()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit;">Go back to workout</button>
+      </div>
     </div>
     <button class="video-close" onclick="closeVideo()">✕ Close</button>
   </div>
@@ -353,6 +410,60 @@
 
 
 
+
+
+<!-- Floating timer button -->
+<button class="float-timer-btn" id="float-timer-btn" onclick="openStandaloneTimer()">
+  <svg class="float-timer-icon" viewBox="0 0 24 24">
+    <circle cx="12" cy="13" r="8"/>
+    <path d="M12 9v4l2.5 2.5"/>
+    <path d="M9.5 3h5"/>
+    <path d="M12 3v2"/>
+  </svg>
+  <span class="float-timer-label" id="float-lbl">Timer</span>
+</button>
+
+<!-- Standalone timer sheet -->
+<div class="standalone-timer-overlay" id="standalone-overlay">
+  <div class="standalone-sheet" id="standalone-sheet">
+    <div class="standalone-handle"></div>
+
+    <!-- Setup state -->
+    <div id="st-setup">
+      <div class="standalone-title">Workout Timer</div>
+      <div class="duration-presets" id="dur-presets">
+        <button class="dur-preset" onclick="selectPreset(20)">20s</button>
+        <button class="dur-preset" onclick="selectPreset(30)">30s</button>
+        <button class="dur-preset selected" onclick="selectPreset(45)">45s</button>
+        <button class="dur-preset" onclick="selectPreset(60)">60s</button>
+        <button class="dur-preset" onclick="selectPreset(90)">90s</button>
+        <button class="dur-preset" onclick="selectPreset(120)">2 min</button>
+      </div>
+      <div class="custom-dur-row">
+        <button class="dur-adj-btn" onclick="adjustStandalone(-5)">−</button>
+        <div class="dur-display" id="st-dur-display">45 <span>sec</span></div>
+        <button class="dur-adj-btn" onclick="adjustStandalone(5)">+</button>
+      </div>
+      <button class="standalone-start-btn" onclick="startStandalone()">Start Timer</button>
+      <button class="standalone-cancel" onclick="closeStandaloneTimer()">Cancel</button>
+    </div>
+
+    <!-- Countdown state -->
+    <div id="st-running" style="display:none">
+      <div class="standalone-title" id="st-running-label">Timer Running</div>
+      <div class="standalone-countdown-wrap">
+        <div class="standalone-big-num" id="st-big-num">45</div>
+        <div class="standalone-big-label">seconds remaining</div>
+      </div>
+      <div class="standalone-add-time">
+        <button class="add-time-btn" onclick="addStandaloneTime(15)">+15s</button>
+        <button class="add-time-btn" onclick="addStandaloneTime(30)">+30s</button>
+        <button class="add-time-btn" onclick="addStandaloneTime(60)">+1 min</button>
+      </div>
+      <button class="standalone-stop-btn" onclick="stopStandalone()">Stop</button>
+    </div>
+  </div>
+</div>
 
 <div class="share-modal" id="share-modal">
   <div class="share-inner">
@@ -447,7 +558,7 @@
   </div>
   <div class="user-card" onclick="selectUser('ankita')">
     <div class="user-avatar avatar-a">A</div>
-    <div class="user-info"><h3>Ankita</h3><p>HITT · Tue lower · Thu upper</p><button class="profile-btn" onclick="event.stopPropagation();openProfile('ankita')">View progress →</button></div>
+    <div class="user-info"><h3>Ankita</h3><p>HITT · Mon / Wed / Fri</p><button class="profile-btn" onclick="event.stopPropagation();openProfile('ankita')">View progress →</button></div>
     <span class="user-arrow">›</span>
   </div>
 </div>
@@ -498,9 +609,6 @@ const BRIAN_CHEST_TRI = [
   {id:"ct6", name:"Overhead Cable Tricep Ext.", muscle:"Triceps", sets:3, reps:"10–12", eq:"cable",
    desc:"Face away from cable, rope overhead. Lean slightly forward, elbows by ears. Extend arms forward to full lockout. Return with control. Best isolation for the long head of the tricep — the biggest part.",
    video:"https://www.youtube.com/shorts/NTk0Igxqcsk"},
-  {id:"ct7", name:"Close Grip Cable Chest Press", muscle:"Triceps / Chest", sets:3, reps:"8–10", eq:"cable",
-   desc:"Set Centr 2 pulleys at chest height. Stand centered with a narrow grip on the handles, elbows tucked close to your sides. Press forward to full extension. The narrow grip shifts emphasis from chest to triceps. Heavy compound finisher.",
-   video:"1lx5o8UM7_c|117|126"},
   {id:"ct8", name:"Cable Core Rotation", muscle:"Core / Obliques", sets:3, reps:"12 each side", eq:"cable",
    desc:"Set Centr 2 pulley at chest height. Stand sideways to the machine, feet shoulder-width. Hold handle with both hands, arms extended. Rotate torso away from the machine in a controlled arc. Resist on the way back. Targets obliques and rotational core strength.",
    video:"1lx5o8UM7_c|324|349"},
@@ -547,7 +655,7 @@ const BRIAN_LEGS = [
    video:"1lx5o8UM7_c|380|404"},
   {id:"lg2", name:"Cable Romanian Deadlift", muscle:"Hamstrings / Glutes", sets:3, reps:"10–12", eq:"cable",
    desc:"Low pulley, straight bar or rope. Stand facing cable. Hinge at hips pushing them back, feeling a deep hamstring stretch. Drive hips forward to return. Cable keeps tension at the bottom — great hamstring builder.",
-   video:"https://www.youtube.com/shorts/PnsKpt80S30"},
+   video:"https://www.youtube.com/shorts/4kqWSx3yO7A"},
   {id:"lg3", name:"Dumbbell Hip Thrust", muscle:"Glutes", sets:3, reps:"10–12", eq:"dumbbell",
    desc:"Upper back on bench, heavy dumbbell across hips. Drive hips up to full extension. Squeeze glutes hard and hold 1 second at top. Lower under control. Treat this as a strength movement — go heavy.",
    video:"https://www.youtube.com/shorts/CvuVYMFd11g"},
@@ -574,76 +682,75 @@ const BRIAN_LEGS = [
    video:"https://www.youtube.com/shorts/ByZJuk85YuE"},
   {id:"lg11", name:"Hanging Knee Raise", muscle:"Lower Abs", sets:3, reps:"15", eq:"pullup",
    desc:"Hang from pull-up bar with overhand grip. Bring knees up toward chest, rounding the lower back at the top. Lower slowly — don't just drop. Progress to straight leg raises when this feels easy. Best lower ab exercise you can do.",
-   video:"https://www.youtube.com/results?search_query=hanging+knee+raise+form"},
+   video:"https://www.youtube.com/shorts/T18jAj05SVM"},
   {id:"lg12", name:"Dead Bug", muscle:"Core Stability", sets:3, reps:"10 each side", eq:"bw",
    desc:"Lie on back, arms pointing at ceiling, knees at 90°. Slowly extend opposite arm and leg toward the floor while pressing your lower back flat. Return and switch sides. Slow and controlled — never let your lower back arch off the floor. Builds deep core stability.",
-   video:"https://www.youtube.com/results?search_query=dead+bug+exercise+form"},
+   video:"https://www.youtube.com/shorts/5c-vucY3beU"},
 ];
 
 // ── ANKITA'S WORKOUTS ─────────────────────────────────────
 // Tuesday = Lower body (HITT-style, glutes/legs/thighs)
-const ANKITA_LOWER = [
-  {id:"al1", name:"Dumbbell Hip Thrust", muscle:"Glutes", sets:3, reps:"15", eq:"dumbbell",
+const ANKITA_MONDAY = [  // Lower Body: Glutes + Legs
+  {id:"am1", name:"Dumbbell Hip Thrust", muscle:"Glutes", sets:3, reps:"15", eq:"dumbbell",
    desc:"Upper back on bench, heavy dumbbell across hips. Drive hips up to full extension. Squeeze glutes hard and hold 1 second at top. Lower with control. The #1 glute builder — don't rush it.",
-   video:"https://www.youtube.com/shorts/CvuVYMFd11g+women"},
-  {id:"al2", name:"Dumbbell Goblet Squat", muscle:"Quads / Glutes", sets:3, reps:"15", eq:"dumbbell",
+   video:"https://www.youtube.com/shorts/1mHlkUC5rGY"},
+  {id:"am2", name:"Dumbbell Goblet Squat", muscle:"Quads / Glutes", sets:3, reps:"15", eq:"dumbbell",
    desc:"Hold one heavy dumbbell at chest. Feet shoulder-width, toes slightly out. Sit deep between heels driving knees out. Press back up. Perfect squat pattern for all levels.",
    video:"1lx5o8UM7_c|380|404"},
-  {id:"al3", name:"Dumbbell Romanian Deadlift", muscle:"Hamstrings / Glutes", sets:3, reps:"12", eq:"dumbbell",
+  {id:"am3", name:"Dumbbell Romanian Deadlift", muscle:"Hamstrings / Glutes", sets:3, reps:"12", eq:"dumbbell",
    desc:"Dumbbells at hips. Hinge pushing hips back until you feel a deep hamstring stretch. Drive hips forward to return. Slow and controlled — build the mind-muscle connection, not just move weight.",
    video:"https://www.youtube.com/shorts/oQwnGfZFfzw"},
-  {id:"al4", name:"Dumbbell Walking Lunge", muscle:"Thighs / Glutes", sets:3, reps:"12 each leg", eq:"dumbbell",
+  {id:"am4", name:"Dumbbell Walking Lunge", muscle:"Thighs / Glutes", sets:3, reps:"12 each leg", eq:"dumbbell",
    desc:"Hold dumbbells at sides. Step forward into lunge, back knee nearly touching floor. Drive through front foot to step into next rep. Keep torso upright throughout.",
    video:"1lx5o8UM7_c|415|425"},
-  {id:"al5", name:"Cable Glute Kickback", muscle:"Glutes", sets:3, reps:"15 each", eq:"cable",
+  {id:"am5", name:"Cable Glute Kickback", muscle:"Glutes", sets:3, reps:"15 each", eq:"cable",
    desc:"Ankle strap on low cable, stand facing machine. Kick leg back and up squeezing glute at the top. Control the return — don't let it drop. Targets the upper portion of the glute.",
-   video:"https://www.youtube.com/shorts/n-cgsNePyFo"},
-  {id:"al6", name:"Cable Standing Leg Curl", muscle:"Hamstrings", sets:3, reps:"15 each", eq:"cable",
-   desc:"Ankle strap on low cable, face machine. Curl heel toward glute squeezing hamstring at top. Lower slowly. Do all reps one leg then switch. Replaces the leg curl machine.",
-   video:"https://www.youtube.com/shorts/UkU8fYyFzLU+women"},
-  {id:"al7", name:"Curtsy Lunge", muscle:"Glutes / Inner Thighs", sets:3, reps:"12 each", eq:"dumbbell",
-   desc:"Hold dumbbells. Step one foot behind and across into a curtsy. Lower back knee toward floor. Return to standing. Targets glute medius and inner thigh in a way regular lunges miss entirely.",
-   video:"https://www.youtube.com/shorts/WAW-2ehQ1GM"},
-  {id:"al8", name:"Jump Squat", muscle:"Full Body / Cardio", sets:3, reps:"15", eq:"bw",
-   desc:"Squat down then explode up jumping as high as possible. Land softly bending knees to absorb. The HITT finisher — elevates heart rate fast. Rest 30 sec between sets.",
+   video:"https://www.youtube.com/shorts/SCPzldzbsRE"},
+  {id:"am6", name:"Jump Squat", muscle:"Full Body / Cardio", sets:3, reps:"15", eq:"bw",
+   desc:"Squat down then explode up jumping as high as possible. Land softly bending knees to absorb. The HITT element — elevates heart rate fast. Rest 30 sec between sets.",
    video:"https://www.youtube.com/shorts/h5TmdMMtIT4"},
-  {id:"al9", name:"Cable Assisted Lunge", muscle:"Legs / Glutes", sets:3, reps:"10 each leg", eq:"cable",
-   desc:"Set Centr 2 pulley low. Hold handle for light balance assistance. Step into a deep lunge, back knee near the floor. The cable keeps you stable so you can focus on depth and form. Great controlled lunge variation.",
-   video:"1lx5o8UM7_c|446|460"},
 ];
 
-// Thursday = Upper body (HITT-style, full body compound + core)
-const ANKITA_UPPER = [
-  {id:"au1", name:"Dumbbell Push Press", muscle:"Shoulders / Full Body", sets:3, reps:"12", eq:"dumbbell",
-   desc:"Dumbbells at shoulders. Dip slightly at knees then drive them up pressing weights overhead. Leg drive makes this heavier and more explosive than a strict press. Great full-body movement.",
-   video:"https://www.youtube.com/shorts/Cj96ZZlmJRU"},
-  {id:"au2", name:"Cable Lat Pulldown", muscle:"Back", sets:3, reps:"12", eq:"cable",
-   desc:"Wide grip, pull bar to upper chest driving elbows down and back. Squeeze lats at the bottom. Return slowly. Back width creates the appearance of a smaller waist.",
-   video:"https://www.youtube.com/watch?v=32auHIqgEoM+women"},
-  {id:"au3", name:"Cable Seated Row", muscle:"Back / Biceps", sets:3, reps:"12", eq:"cable",
-   desc:"Sit facing low cable. Pull handle to lower abdomen driving elbows back. Squeeze shoulder blades at the end. Extend arms with control. Works back and biceps together.",
-   video:"https://www.youtube.com/shorts/LyZH4UGdDTc+women"},
-  {id:"au4", name:"Dumbbell Squat to Press", muscle:"Full Body", sets:3, reps:"12", eq:"dumbbell",
-   desc:"Dumbbells at shoulders. Squat down, as you stand press the weights overhead in one fluid motion. Legs and shoulders combined — efficient and effective full-body HITT movement.",
-   video:"https://www.youtube.com/shorts/5iYHZ61Fjo4"},
-  {id:"au5", name:"Burpee", muscle:"Full Body / Cardio", sets:3, reps:"12", eq:"bw",
-   desc:"Stand, drop hands to floor, jump feet back to plank, push-up, jump feet in, explode up overhead. The definitive HITT move. Step instead of jump to modify.",
-   video:"https://www.youtube.com/shorts/AuwNiGTjavM"},
-  {id:"au6", name:"Cable Face Pull", muscle:"Rear Delts / Shoulders", sets:3, reps:"15", eq:"cable",
-   desc:"Rope at head height. Pull toward face with elbows flaring wide. Squeeze rear delts and externally rotate. Great for shoulder health and posture — especially important for anyone who sits at a desk.",
-   video:"https://www.youtube.com/shorts/IeOqdw9WI90+women"},
-  {id:"au7", name:"Bicycle Crunch", muscle:"Core / Obliques", sets:3, reps:"20", eq:"bw",
+const ANKITA_WEDNESDAY = [  // Core + Cardio
+  {id:"aw1", name:"Cable Crunch", muscle:"Abs", sets:3, reps:"15", eq:"cable",
+   desc:"Kneel facing cable, rope at high pulley beside head. Crunch elbows toward knees rounding the spine. The cable adds real load that bodyweight crunches can't match. Go heavy enough to feel it.",
+   video:"https://www.youtube.com/shorts/ByZJuk85YuE"},
+  {id:"aw2", name:"Bicycle Crunch", muscle:"Core / Obliques", sets:3, reps:"20", eq:"bw",
    desc:"Hands behind head, legs off ground. Opposite elbow to opposite knee while extending the other leg. Slow and controlled — don't just crank through. Feel the oblique working each rep.",
    video:"https://www.youtube.com/shorts/cFDS2S6Vqis"},
-  {id:"au8", name:"Cable Crunch", muscle:"Core", sets:3, reps:"15", eq:"cable",
-   desc:"Kneel facing cable, rope at high pulley beside head. Crunch elbows toward knees rounding the spine. The cable adds real load that bodyweight crunches can't match. Great core finisher.",
-   video:"https://www.youtube.com/shorts/ByZJuk85YuE"},
-  {id:"au9", name:"Cable Squat to Shoulder Press", muscle:"Full Body / Shoulders", sets:3, reps:"8–10", eq:"cable",
-   desc:"Set Centr 2 pulleys low. Hold handles at shoulder height. Squat down then drive up pressing handles overhead in one fluid movement. Full body compound HITT movement — legs and shoulders combined.",
-   video:"1lx5o8UM7_c|217|230"},
-  {id:"au10", name:"Cable Core Rotation", muscle:"Core / Obliques", sets:3, reps:"12 each side", eq:"cable",
-   desc:"Pulley at chest height. Stand sideways, hold handle with both hands extended. Rotate torso away from machine in a controlled arc. Resist on the way back. Great oblique and rotational core finisher.",
+  {id:"aw3", name:"Cable Core Rotation", muscle:"Core / Obliques", sets:3, reps:"12 each side", eq:"cable",
+   desc:"Pulley at chest height. Stand sideways, hold handle with both hands extended. Rotate torso away from machine in a controlled arc. Resist on the way back. Great oblique and rotational core strength.",
    video:"1lx5o8UM7_c|324|349"},
+  {id:"aw4", name:"Mountain Climbers", muscle:"Core / Cardio", sets:3, reps:"30 sec", eq:"bw",
+   desc:"Plank position, drive knees toward chest alternating fast. Keep hips level — don't let them rise. Faster = more cardio. Slower = more core. Both are great.",
+   video:"https://www.youtube.com/shorts/7W4JEfEKuC4"},
+  {id:"aw5", name:"Dead Bug", muscle:"Core Stability", sets:3, reps:"10 each side", eq:"bw",
+   desc:"Lie on back, arms pointing at ceiling, knees at 90°. Slowly extend opposite arm and leg toward the floor while pressing your lower back flat. Return and switch sides. Never let your lower back arch off the floor.",
+   video:"https://www.youtube.com/shorts/5c-vucY3beU"},
+  {id:"aw6", name:"Plank Hold", muscle:"Core", sets:3, reps:"45 sec", eq:"bw",
+   desc:"Forearms and toes, body in a straight line. Brace abs, glutes, and quads. Don't let hips sag or pike. Breathe steadily. The foundation of all core work.",
+   video:"https://www.youtube.com/shorts/Pkp3SOvipZ0"},
+];
+
+const ANKITA_FRIDAY = [  // Upper Body + Full Body
+  {id:"af1", name:"Dumbbell Push Press", muscle:"Shoulders / Full Body", sets:3, reps:"12", eq:"dumbbell",
+   desc:"Dumbbells at shoulders. Dip slightly at knees then drive them up pressing weights overhead. Leg drive makes this heavier and more explosive than a strict press. Great full-body movement.",
+   video:"https://www.youtube.com/shorts/Cj96ZZlmJRU"},
+  {id:"af2", name:"Cable Lat Pulldown", muscle:"Back", sets:3, reps:"12", eq:"cable",
+   desc:"Wide grip, pull bar to upper chest driving elbows down and back. Squeeze lats at the bottom. Return slowly. Back width creates the appearance of a smaller waist.",
+   video:"1lx5o8UM7_c|149|160"},
+  {id:"af3", name:"Cable Seated Row", muscle:"Back / Biceps", sets:3, reps:"12", eq:"cable",
+   desc:"Sit facing low cable. Pull handle to lower abdomen driving elbows back. Squeeze shoulder blades at the end. Extend arms with control. Works back and biceps together.",
+   video:"https://www.youtube.com/shorts/LyZH4UGdDTc"},
+  {id:"af4", name:"Cable Face Pull", muscle:"Rear Delts / Shoulders", sets:3, reps:"15", eq:"cable",
+   desc:"Rope at head height. Pull toward face with elbows flaring wide. Squeeze rear delts and externally rotate. Great for shoulder health and posture.",
+   video:"https://www.youtube.com/shorts/IeOqdw9WI90"},
+  {id:"af5", name:"Burpee", muscle:"Full Body / Cardio", sets:3, reps:"12", eq:"bw",
+   desc:"Stand, drop hands to floor, jump feet back to plank, push-up, jump feet in, explode up with arms overhead. The definitive HITT move. Step instead of jump to modify.",
+   video:"https://www.youtube.com/shorts/AuwNiGTjavM"},
+  {id:"af6", name:"Dumbbell Squat to Press", muscle:"Full Body", sets:3, reps:"12", eq:"dumbbell",
+   desc:"Dumbbells at shoulders. Squat down, as you stand press the weights overhead in one fluid motion. Legs and shoulders combined — incredibly efficient full-body exercise.",
+   video:"https://www.youtube.com/shorts/5iYHZ61Fjo4"},
 ];
 
 // ── BUILD SCHEDULE ────────────────────────────────────────
@@ -663,11 +770,11 @@ const EX = {
     Sunday:    [],
   },
   ankita: {
-    Monday:    [],
-    Tuesday:   cloneForDay(ANKITA_LOWER, 'tue'),
-    Wednesday: [],
-    Thursday:  cloneForDay(ANKITA_UPPER, 'thu'),
-    Friday:    [],
+    Monday:    cloneForDay(ANKITA_MONDAY,    'mon'),
+    Tuesday:   [],
+    Wednesday: cloneForDay(ANKITA_WEDNESDAY, 'wed'),
+    Thursday:  [],
+    Friday:    cloneForDay(ANKITA_FRIDAY,    'fri'),
     Saturday:  [],
     Sunday:    [],
   }
@@ -680,17 +787,21 @@ const DAY_LABEL = {
     Friday:"Back + Shoulders + Biceps", Saturday:"Rest", Sunday:"Rest"
   },
   ankita: {
-    Monday:"Rest", Tuesday:"Lower Body · Glutes + Legs",
-    Wednesday:"Rest", Thursday:"Upper Body · HITT",
-    Friday:"Rest", Saturday:"Rest", Sunday:"Rest"
+    Monday:"Lower Body · Glutes + Legs",
+    Tuesday:"Rest",
+    Wednesday:"Core + Cardio",
+    Thursday:"Rest",
+    Friday:"Upper Body · Full Body",
+    Saturday:"Rest", Sunday:"Rest"
   }
 };
 
 const REST_MSG = {
   brian: { Saturday:"Rest day. Recover and eat well.", Sunday:"Full rest. Ready for Monday." },
   ankita: {
-    Monday:"Rest day. Recover from the week.", Wednesday:"Rest day — halfway there.",
-    Friday:"Rest day. Great week.", Saturday:"Rest day.", Sunday:"Full rest."
+    Tuesday:"Rest day. Lower body recovers today.",
+    Thursday:"Rest day — core and upper body recover today.",
+    Saturday:"Rest day. Great week.", Sunday:"Full rest."
   }
 };
 
@@ -743,6 +854,8 @@ function selectUser(u) {
   cu=u; initU(u);
   document.getElementById('user-screen').style.display='none';
   document.getElementById('app').style.display='flex';
+  // Show floating timer for all users
+  document.getElementById('float-timer-btn').classList.add('visible');
   const isA = u==='ankita';
   document.getElementById('hav').textContent = isA?'A':'B';
   document.getElementById('hav').style.background = isA?'#8A2C5F':'#1C4E3F';
@@ -761,6 +874,8 @@ function switchUser() {
   cu=null; cd=null;
   document.getElementById('app').style.display='none';
   document.getElementById('user-screen').style.display='flex';
+  document.getElementById('float-timer-btn').classList.remove('visible');
+  closeStandaloneTimer();
 }
 
 function buildTabs() {
@@ -852,7 +967,7 @@ function renderDay(day, dir='') {
   // Day color class
   const DAY_COLOR = {
     brian: {Monday:'chest',Thursday:'chest',Tuesday:'back',Friday:'back',Wednesday:'legs',Saturday:'rest',Sunday:'rest'},
-    ankita: {Tuesday:'lower',Thursday:'upper',Monday:'rest',Wednesday:'rest',Friday:'rest',Saturday:'rest',Sunday:'rest'}
+    ankita: {Monday:'lower',Wednesday:'legs',Friday:'back',Tuesday:'rest',Thursday:'rest',Saturday:'rest',Sunday:'rest'}
   };
   const dayColorCls = (DAY_COLOR[cu] && DAY_COLOR[cu][day]) || 'chest';
 
@@ -963,11 +1078,13 @@ function tapSet(eid, idx) {
     setTimeout(()=>btnEl.classList.remove('just-done'),400);
     // Haptic feedback
     if(navigator.vibrate) navigator.vibrate(30);
-    // Start rest timer — find exercise name
-    const exForTimer = EX[cu][cd].find(e=>e.id===eid);
-    if(exForTimer) startTimer(exForTimer.name);
+    // Rest timer only fires for Ankita
+    if(cu === 'ankita') {
+      const exForTimer = EX[cu][cd].find(e=>e.id===eid);
+      if(exForTimer) startTimer(exForTimer.name);
+    }
   } else {
-    skipTimer(); // untapping a set cancels the timer
+    if(cu === 'ankita') skipTimer();
   }
 
   const ex=EX[cu][cd].find(e=>e.id===eid); if(!ex)return;
@@ -1003,37 +1120,53 @@ function tapSet(eid, idx) {
 
 // ── VIDEO PLAYER ──────────────────────────────────────────
 function openVideo(url, name) {
-  // Convert any YouTube URL to embed with autoplay
-  // Supports: regular watch, shorts, already-embed
-  // Also supports start/end params: url can be "VIDEO_ID|start|end"
-  let embedUrl = '';
+  // Convert pipe format to a watch URL for direct opening
+  let watchUrl = url;
   if (url.includes('|')) {
-    // Custom format: "videoId|start|end"
     const parts = url.split('|');
-    const vid = parts[0], start = parts[1]||0, end = parts[2]||'';
-    embedUrl = `https://www.youtube.com/embed/${vid}?autoplay=1&start=${start}${end?'&end='+end:''}`;
-  } else if (url.includes('youtube.com/shorts/')) {
-    const vid = url.split('/shorts/')[1].split('?')[0];
-    embedUrl = `https://www.youtube.com/embed/${vid}?autoplay=1`;
-  } else if (url.includes('watch?v=')) {
-    const vid = new URL(url).searchParams.get('v');
-    const t = new URL(url).searchParams.get('t');
-    embedUrl = `https://www.youtube.com/embed/${vid}?autoplay=1${t?'&start='+t:''}`;
-  } else if (url.includes('youtu.be/')) {
-    const vid = url.split('youtu.be/')[1].split('?')[0];
-    embedUrl = `https://www.youtube.com/embed/${vid}?autoplay=1`;
-  } else {
-    embedUrl = url; // fallback
+    const vid = parts[0], start = parts[1]||0;
+    watchUrl = `https://www.youtube.com/watch?v=${vid}&t=${start}s`;
   }
-  document.getElementById('video-iframe').src = embedUrl;
-  document.getElementById('video-modal-title').textContent = name;
-  document.getElementById('video-modal').classList.add('open');
+  // Open directly in YouTube
+  window.open(watchUrl, '_blank');
 }
 
 function closeVideo() {
   document.getElementById('video-modal').classList.remove('open');
-  document.getElementById('video-iframe').src = ''; // stop playback
+  document.getElementById('video-iframe').src = '';
+  // Reset blocked state
+  document.getElementById('video-blocked').style.display = 'none';
+  document.getElementById('video-iframe').style.display = 'block';
 }
+
+function showVideoFallback() {
+  document.getElementById('video-blocked').style.display = 'flex';
+  document.getElementById('video-iframe').style.display = 'none';
+}
+
+function checkIframeLoad(iframe) {
+  // YouTube sets the title to "YouTube" on a blocked/error page
+  // We can't read cross-origin title, but we can detect certain patterns
+  try {
+    // If we can access contentDocument it's same-origin (won't happen with YT)
+    // This fires on successful load — nothing to do
+  } catch(e) {
+    showVideoFallback();
+  }
+}
+
+// Listen for YouTube's postMessage error events
+window.addEventListener('message', function(e) {
+  if (!e.data) return;
+  try {
+    const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+    // YouTube player error codes: 100, 101, 150 = embedding not allowed
+    if (data.event === 'onError' &&
+        (data.info === 100 || data.info === 101 || data.info === 150 || data.info === 153)) {
+      showVideoFallback();
+    }
+  } catch(e) {}
+});
 
 // Close modal on backdrop tap
 document.getElementById('video-modal').addEventListener('click', function(e) {
@@ -1069,7 +1202,7 @@ function renderProfile() {
   const isA = u === 'ankita';
   const color = isA ? '#8A2C5F' : '#1C4E3F';
   const name = isA ? 'Ankita' : 'Brian';
-  const sub = isA ? 'HITT · Tue & Thu' : 'Strength · Mon–Fri';
+  const sub = isA ? 'HITT · Mon / Wed / Fri' : 'Strength · Mon–Fri';
 
   const now = new Date(), mon = new Date(now);
   mon.setDate(now.getDate() - ((now.getDay()+6)%7));
@@ -1785,6 +1918,150 @@ function downloadShareCard() {
 // Close share modal on backdrop tap
 document.getElementById('share-modal').addEventListener('click', function(e) {
   if (e.target === this) closeShare();
+});
+
+// ── STANDALONE TIMER ──────────────────────────────────────
+let stDuration = 45;
+let stRemaining = 0;
+let stInterval = null;
+const ST_CIRC = 2 * Math.PI * 58;
+
+function openStandaloneTimer() {
+  // If already running, just show the sheet
+  document.getElementById('standalone-overlay').classList.add('active');
+  if (stInterval) {
+    showStRunning();
+  } else {
+    showStSetup();
+  }
+}
+
+function closeStandaloneTimer() {
+  document.getElementById('standalone-overlay').classList.remove('active');
+}
+
+function showStSetup() {
+  document.getElementById('st-setup').style.display = 'block';
+  document.getElementById('st-running').style.display = 'none';
+  updateStDurDisplay();
+}
+
+function showStRunning() {
+  document.getElementById('st-setup').style.display = 'none';
+  document.getElementById('st-running').style.display = 'block';
+  updateStCountdown();
+}
+
+function selectPreset(secs) {
+  stDuration = secs;
+  document.querySelectorAll('.dur-preset').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+  updateStDurDisplay();
+}
+
+function adjustStandalone(delta) {
+  stDuration = Math.max(5, Math.min(600, stDuration + delta));
+  // Deselect presets if custom
+  const presets = [20,30,45,60,90,120];
+  document.querySelectorAll('.dur-preset').forEach((b,i) => {
+    b.classList.toggle('selected', presets[i] === stDuration);
+  });
+  updateStDurDisplay();
+}
+
+function updateStDurDisplay() {
+  const el = document.getElementById('st-dur-display');
+  if (stDuration < 60) {
+    el.innerHTML = stDuration + ' <span>sec</span>';
+  } else {
+    const m = Math.floor(stDuration/60), s = stDuration%60;
+    el.innerHTML = (m + (s>0?':'+String(s).padStart(2,'0'):'')) + ' <span>min</span>';
+  }
+}
+
+function startStandalone() {
+  stRemaining = stDuration;
+  clearInterval(stInterval);
+  stInterval = setInterval(() => {
+    stRemaining--;
+    updateStCountdown();
+    updateFloatBtn();
+    if (stRemaining <= 0) {
+      stDone();
+    }
+  }, 1000);
+  showStRunning();
+  updateFloatBtn();
+  // Close sheet so they can see workout
+  setTimeout(() => closeStandaloneTimer(), 800);
+}
+
+function stopStandalone() {
+  clearInterval(stInterval);
+  stInterval = null;
+  updateFloatBtn();
+  showStSetup();
+}
+
+function addStandaloneTime(secs) {
+  stRemaining += secs;
+  updateStCountdown();
+}
+
+function updateStCountdown() {
+  const el = document.getElementById('st-big-num');
+  if (!el) return;
+  el.textContent = stRemaining;
+  el.className = 'standalone-big-num' + (stRemaining <= 5 ? ' urgent' : '');
+}
+
+function updateFloatBtn() {
+  const btn = document.getElementById('float-timer-btn');
+  const lbl = document.getElementById('float-lbl');
+  if (!btn) return;
+  if (stInterval) {
+    btn.classList.add('running');
+    lbl.textContent = stRemaining + 's';
+  } else {
+    btn.classList.remove('running');
+    lbl.textContent = 'Timer';
+  }
+}
+
+function stDone() {
+  clearInterval(stInterval);
+  stInterval = null;
+  updateFloatBtn();
+  // Beep
+  try {
+    const ctx2 = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.2, 0.4].forEach(t => {
+      const osc = ctx2.createOscillator();
+      const gain = ctx2.createGain();
+      osc.connect(gain); gain.connect(ctx2.destination);
+      osc.frequency.value = 660;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.4, ctx2.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + t + 0.25);
+      osc.start(ctx2.currentTime + t);
+      osc.stop(ctx2.currentTime + t + 0.25);
+    });
+  } catch(e) {}
+  if (navigator.vibrate) navigator.vibrate([80, 60, 80, 60, 150]);
+  // Reopen sheet to show it's done
+  openStandaloneTimer();
+  // Show done state briefly
+  const bigNum = document.getElementById('st-big-num');
+  if (bigNum) { bigNum.textContent = 'Done'; bigNum.style.fontSize = '60px'; }
+  setTimeout(() => {
+    if (bigNum) { bigNum.style.fontSize = ''; }
+    showStSetup();
+  }, 1500);
+}
+
+// Close on backdrop tap
+document.getElementById('standalone-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeStandaloneTimer();
 });
 </script>
 </body>
