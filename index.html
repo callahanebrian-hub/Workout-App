@@ -322,6 +322,20 @@
   .completion-overlay:not(.show) .completion-card p,
   .completion-overlay:not(.show) .completion-stats,
   .completion-overlay:not(.show) .completion-dismiss { animation: none; opacity: 1; transform: none; }
+
+  /* ── SHARE CARD MODAL ── */
+  .share-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 24px; }
+  .share-modal.open { display: flex; }
+  .share-inner { background: white; border-radius: 20px; width: 100%; max-width: 360px; overflow: hidden; }
+  .share-preview { padding: 0; }
+  .share-actions { padding: 16px; display: flex; gap: 10px; }
+  .share-btn-main { flex: 1; background: var(--green); color: white; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .share-btn-close { background: var(--bg); border: none; border-radius: 12px; padding: 14px 18px; font-size: 15px; color: var(--muted); cursor: pointer; font-family: inherit; font-weight: 600; }
+  #share-canvas { display: block; width: 100%; border-radius: 0; }
+
+  /* Share button in profile */
+  .share-week-btn { width: 100%; background: var(--green); color: white; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .share-week-btn svg { width: 16px; height: 16px; fill: white; }
 </style>
 </head>
 <body>
@@ -339,6 +353,18 @@
 
 
 
+
+<div class="share-modal" id="share-modal">
+  <div class="share-inner">
+    <div class="share-preview">
+      <canvas id="share-canvas" width="720" height="900"></canvas>
+    </div>
+    <div class="share-actions">
+      <button class="share-btn-main" onclick="downloadShareCard()">Save to Photos</button>
+      <button class="share-btn-close" onclick="closeShare()">Close</button>
+    </div>
+  </div>
+</div>
 <div class="timer-overlay" id="timer-overlay">
   <div class="timer-sheet">
     <div class="timer-header">
@@ -1183,6 +1209,10 @@ function renderProfile() {
         <div class="week-browser-stat"><div class="wbs-val">${trend}</div><div class="wbs-lbl">vs prior week</div></div>
       </div>` : ''}
     </div>
+    ${hasData ? `<button class="share-week-btn" onclick="openShareCard('${u}', ${profileWeekOffset})">
+      <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+      Share This Week
+    </button>` : ''}
   `;
 }
 
@@ -1502,6 +1532,260 @@ function weightKeydown(e, eid, idx, totalSets) {
     }
   }
 }
+
+// ── SHARE CARD ────────────────────────────────────────────
+function openShareCard(u, weekOffset) {
+  drawShareCard(u, weekOffset);
+  document.getElementById('share-modal').classList.add('open');
+}
+
+function closeShare() {
+  document.getElementById('share-modal').classList.remove('open');
+}
+
+function drawShareCard(u, weekOffset) {
+  const canvas = document.getElementById('share-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 720, H = 900;
+  canvas.width = W; canvas.height = H;
+
+  const isA = u === 'ankita';
+  const name = isA ? 'Ankita' : 'Brian';
+  const accentColor = isA ? '#8A2C5F' : '#1C4E3F';
+  const accentLight = isA ? '#f9e4f0' : '#e8f5ee';
+  const accentMid   = isA ? '#8A2C5F' : '#2E7057';
+
+  // Week label
+  const mon = new Date();
+  mon.setDate(mon.getDate() - ((mon.getDay()+6)%7) - weekOffset*7);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  const fmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const weekLbl = `Week of ${fmt(mon)} – ${fmt(sun)}`;
+  const isThisWeek = weekOffset === 0;
+
+  // Get week data
+  let userData;
+  if (weekOffset === 0) {
+    userData = JSON.parse(localStorage.getItem('wt-v4') || '{}')[u] || {};
+  } else {
+    const key = getMondayStr(weekOffset);
+    userData = (JSON.parse(localStorage.getItem('wt-history-' + key) || '{}')[u]) || {};
+  }
+
+  // Count sets
+  let totalSets = 0, doneSets = 0;
+  DAYS.forEach(day => {
+    EX[u][day].forEach(ex => {
+      totalSets += ex.sets;
+      for (let i = 0; i < ex.sets; i++) {
+        if (userData[ex.id] && userData[ex.id][i]) doneSets++;
+      }
+    });
+  });
+  const pct = totalSets > 0 ? Math.round(doneSets/totalSets*100) : 0;
+  const streak = getStreak(u);
+  const prs = countDayPRsForWeek(u, userData);
+
+  // Count workout days completed
+  let daysHit = 0;
+  DAYS.forEach(day => {
+    const exs = EX[u][day];
+    if (!exs.length) return;
+    let d = 0, t = 0;
+    exs.forEach(ex => { t += ex.sets; for(let i=0;i<ex.sets;i++) if(userData[ex.id]&&userData[ex.id][i])d++; });
+    if(d > 0) daysHit++;
+  });
+
+  // ── DRAW ──────────────────────────────────────────────
+
+  // Background
+  ctx.fillStyle = '#F8F7F4';
+  ctx.fillRect(0, 0, W, H);
+
+  // Top accent bar
+  ctx.fillStyle = accentColor;
+  roundRect(ctx, 0, 0, W, 180, {tl:0, tr:0, bl:0, br:0});
+  ctx.fill();
+
+  // Avatar circle
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.beginPath(); ctx.arc(100, 90, 44, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 32px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(isA ? 'A' : 'B', 100, 90);
+
+  // Name
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 38px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(name, 162, 75);
+
+  // Week label
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.font = '22px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillText(weekLbl, 162, 115);
+
+  // App label
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '18px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('Workout Tracker', W - 36, 148);
+
+  // ── STAT CARDS ───────────────────────────────────────
+  const stats = [
+    { val: doneSets, lbl: 'Sets Done' },
+    { val: pct + '%', lbl: 'Completion' },
+    { val: daysHit, lbl: 'Days Hit' },
+    { val: prs > 0 ? prs : '—', lbl: 'PRs' },
+  ];
+  const cardW = (W - 72) / 4;
+  const cardX = 36;
+  const cardY = 210;
+
+  stats.forEach((s, i) => {
+    const x = cardX + i * (cardW + 8);
+    // Card bg
+    ctx.fillStyle = 'white';
+    roundRect(ctx, x, cardY, cardW, 110, 16);
+    ctx.fill();
+    // Value
+    ctx.fillStyle = accentColor;
+    ctx.font = `bold 34px -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(s.val), x + cardW/2, cardY + 46);
+    // Label
+    ctx.fillStyle = '#888888';
+    ctx.font = '16px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(s.lbl, x + cardW/2, cardY + 82);
+  });
+
+  // ── STREAK ───────────────────────────────────────────
+  if (streak > 0) {
+    ctx.fillStyle = accentColor;
+    roundRect(ctx, 36, 346, W - 72, 60, 14);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${streak}-Week Streak`, W/2, 376);
+  }
+
+  // ── DAY GRID ─────────────────────────────────────────
+  const gridY = streak > 0 ? 438 : 368;
+  ctx.fillStyle = '#1A1A1A';
+  ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('This Week', 36, gridY);
+
+  const cellSize = 86;
+  const cellGap = 10;
+  const gridStartX = 36;
+  const gridStartY = gridY + 28;
+
+  DAYS.forEach((day, i) => {
+    const x = gridStartX + i * (cellSize + cellGap);
+    if (x + cellSize > W - 36) return; // skip if overflow
+    const exs = EX[u][day];
+    let cls = 'rest';
+    if (exs.length) {
+      let d=0, t=0;
+      exs.forEach(ex => { t+=ex.sets; for(let j=0;j<ex.sets;j++) if(userData[ex.id]&&userData[ex.id][j])d++; });
+      const p = t > 0 ? d/t : 0;
+      cls = p === 1 ? 'full' : p > 0 ? 'partial' : 'empty';
+    }
+
+    // Cell bg
+    if (cls === 'full') ctx.fillStyle = accentColor;
+    else if (cls === 'partial') ctx.fillStyle = accentLight;
+    else if (cls === 'empty') ctx.fillStyle = '#EEEBE4';
+    else ctx.fillStyle = '#F0EEEA';
+
+    roundRect(ctx, x, gridStartY, cellSize, cellSize + 10, 12);
+    ctx.fill();
+
+    // Day letter
+    ctx.fillStyle = cls === 'full' ? 'white' : cls === 'partial' ? accentMid : '#aaa';
+    ctx.font = `bold 18px -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(day.slice(0,1), x + cellSize/2, gridStartY + 28);
+
+    // Pct or dash
+    if (cls !== 'rest') {
+      let d=0,t=0;
+      EX[u][day].forEach(ex => { t+=ex.sets; for(let j=0;j<ex.sets;j++) if(userData[ex.id]&&userData[ex.id][j])d++; });
+      const p = t > 0 ? Math.round(d/t*100) : 0;
+      ctx.fillStyle = cls === 'full' ? 'rgba(255,255,255,0.85)' : cls === 'partial' ? accentMid : '#ccc';
+      ctx.font = `600 15px -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.fillText(p > 0 ? p+'%' : '—', x + cellSize/2, gridStartY + 68);
+    } else {
+      ctx.fillStyle = '#ccc';
+      ctx.font = '15px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillText('—', x + cellSize/2, gridStartY + 68);
+    }
+  });
+
+  // ── FOOTER ───────────────────────────────────────────
+  ctx.fillStyle = accentColor;
+  ctx.fillRect(0, H - 80, W, 80);
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Built with Workout Tracker', W/2, H - 40);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  if (typeof r === 'number') r = {tl:r,tr:r,bl:r,br:r};
+  ctx.beginPath();
+  ctx.moveTo(x + r.tl, y);
+  ctx.lineTo(x + w - r.tr, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r.tr);
+  ctx.lineTo(x+w, y+h-r.br);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r.br, y+h);
+  ctx.lineTo(x+r.bl, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r.bl);
+  ctx.lineTo(x, y+r.tl);
+  ctx.quadraticCurveTo(x, y, x+r.tl, y);
+  ctx.closePath();
+}
+
+function countDayPRsForWeek(u, userData) {
+  let total = 0;
+  DAYS.forEach(day => {
+    EX[u][day].forEach(ex => {
+      const prevWts = getPrevWeights(u, ex.id);
+      const curKey = 'wt-weights-' + thisWeek;
+      const curAll = JSON.parse(localStorage.getItem(curKey) || '{}');
+      const curWts = (curAll[u] && curAll[u][ex.id]) || {};
+      for (let i = 0; i < ex.sets; i++) {
+        const cw = parseFloat(curWts[i]) || 0;
+        const pw = parseFloat(prevWts[i]) || 0;
+        if (cw > 0 && cw > pw) total++;
+      }
+    });
+  });
+  return total;
+}
+
+function downloadShareCard() {
+  const canvas = document.getElementById('share-canvas');
+  const link = document.createElement('a');
+  link.download = 'workout-week.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// Close share modal on backdrop tap
+document.getElementById('share-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeShare();
+});
 </script>
 </body>
 </html>
