@@ -195,6 +195,21 @@
   .streak-stat .fire { font-size: 22px; }
   .streak-stat .streak-info h4 { font-size: 15px; font-weight: 700; }
   .streak-stat .streak-info p { font-size: 12px; color: var(--muted); }
+
+  /* ── WEEK BROWSER ── */
+  .week-browser { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow); }
+  .week-browser-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .week-nav-btn { background: var(--bg); border: 2px solid var(--gray); border-radius: 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--text); transition: all 0.15s; flex-shrink: 0; }
+  .week-nav-btn:active { transform: scale(0.9); background: var(--gray); }
+  .week-nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .week-browser-label { font-size: 13px; font-weight: 700; color: var(--text); text-align: center; flex: 1; padding: 0 8px; }
+  .week-browser-label span { display: block; font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+  .week-browser-sets { display: flex; gap: 10px; margin-top: 12px; }
+  .week-browser-stat { flex: 1; background: var(--bg); border-radius: 8px; padding: 8px; text-align: center; }
+  .week-browser-stat .wbs-val { font-size: 18px; font-weight: 800; color: var(--green); }
+  .week-browser-stat .wbs-lbl { font-size: 10px; color: var(--muted); font-weight: 600; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .week-browser-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 16px 0; }
+  .this-week-badge { display: inline-block; background: #e8f5ee; color: var(--green-mid); font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 6px; margin-left: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
 </style>
 </head>
 <body>
@@ -372,6 +387,15 @@ const BRIAN_LEGS = [
   {id:"lg9", name:"Cable Assisted Lunge", muscle:"Legs / Glutes", sets:3, reps:"10 each leg", eq:"cable",
    desc:"Set Centr 2 pulley low. Hold the handle at your side or in front for balance assistance. Step forward into a lunge, lowering back knee toward floor. The cable provides light assistance and keeps you honest on form. Great for building lunge confidence with heavier depth.",
    video:"1lx5o8UM7_c|446|460"},
+  {id:"lg10", name:"Cable Crunch", muscle:"Abs", sets:3, reps:"15", eq:"cable",
+   desc:"Kneel facing cable, rope attachment at high pulley beside head. Pull rope down crunching elbows toward knees, rounding the spine hard. The cable adds real load that bodyweight can't match. This is the bench press of ab training — go heavy enough to feel it.",
+   video:"https://www.youtube.com/shorts/ByZJuk85YuE"},
+  {id:"lg11", name:"Hanging Knee Raise", muscle:"Lower Abs", sets:3, reps:"15", eq:"pullup",
+   desc:"Hang from pull-up bar with overhand grip. Bring knees up toward chest, rounding the lower back at the top. Lower slowly — don't just drop. Progress to straight leg raises when this feels easy. Best lower ab exercise you can do.",
+   video:"https://www.youtube.com/results?search_query=hanging+knee+raise+form"},
+  {id:"lg12", name:"Dead Bug", muscle:"Core Stability", sets:3, reps:"10 each side", eq:"bw",
+   desc:"Lie on back, arms pointing at ceiling, knees at 90°. Slowly extend opposite arm and leg toward the floor while pressing your lower back flat. Return and switch sides. Slow and controlled — never let your lower back arch off the floor. Builds deep core stability.",
+   video:"https://www.youtube.com/results?search_query=dead+bug+exercise+form"},
 ];
 
 // ── ANKITA'S WORKOUTS ─────────────────────────────────────
@@ -754,12 +778,22 @@ function updateLastDone(u, day) {
   localStorage.setItem('wt-lastdone', JSON.stringify(ld));
 }
 
+// Track which week offset the browser is showing
+let profileUser = null;
+let profileWeekOffset = 0;
+
 function openProfile(u) {
+  profileUser = u;
+  profileWeekOffset = 0;
   document.getElementById('user-screen').style.display = 'none';
   const ps = document.getElementById('profile-screen');
   ps.style.display = 'flex';
   ps.style.flexDirection = 'column';
+  renderProfile();
+}
 
+function renderProfile() {
+  const u = profileUser;
   const isA = u === 'ankita';
   const color = isA ? '#8A2C5F' : '#1C4E3F';
   const name = isA ? 'Ankita' : 'Brian';
@@ -775,17 +809,20 @@ function openProfile(u) {
   const ld = JSON.parse(localStorage.getItem('wt-lastdone') || '{}');
   const lastW = ld[u];
 
-  // This week's data
-  const thisData = JSON.parse(localStorage.getItem('wt-v4') || '{}')[u] || {};
-  const lastWeekKey = getMondayStr(1);
-  const lastWeekAllData = JSON.parse(localStorage.getItem('wt-history-' + lastWeekKey) || '{}');
-  const lastData = lastWeekAllData[u] || {};
+  // Helper: get week data for any offset
+  function getWeekData(offset) {
+    if (offset === 0) {
+      return JSON.parse(localStorage.getItem('wt-v4') || '{}')[u] || {};
+    }
+    const key = getMondayStr(offset);
+    return (JSON.parse(localStorage.getItem('wt-history-' + key) || '{}')[u]) || {};
+  }
 
-  // Calculate sets per week
-  function countSets(userData, userId) {
+  // Helper: count sets
+  function countSets(userData) {
     let total = 0, done = 0;
     DAYS.forEach(day => {
-      EX[userId][day].forEach(ex => {
+      EX[u][day].forEach(ex => {
         total += ex.sets;
         for (let i = 0; i < ex.sets; i++) {
           if (userData[ex.id] && userData[ex.id][i]) done++;
@@ -795,13 +832,10 @@ function openProfile(u) {
     return {total, done};
   }
 
-  const thisStats = countSets(thisData, u);
-  const lastStats = countSets(lastData, u);
-
-  // Days completed this week
-  function dayCompletion(userData, userId, day) {
-    const exs = EX[userId][day];
-    if (!exs.length) return null; // rest
+  // Helper: day completion
+  function dayCompletion(userData, day) {
+    const exs = EX[u][day];
+    if (!exs.length) return null;
     let total = 0, done = 0;
     exs.forEach(ex => {
       total += ex.sets;
@@ -812,15 +846,55 @@ function openProfile(u) {
     return {total, done, pct: total > 0 ? Math.round(done/total*100) : 0};
   }
 
-  // Build week grid
-  function buildWeekGrid(userData, userId) {
+  // Helper: build week grid
+  function buildWeekGrid(userData) {
     return DAYS.map(day => {
-      const comp = dayCompletion(userData, userId, day);
+      const comp = dayCompletion(userData, day);
       if (!comp) return `<div class="week-cell rest"><span class="wday">${day.slice(0,1)}</span><span class="wpct">—</span></div>`;
       const cls = comp.pct === 100 ? 'full' : comp.pct > 0 ? 'partial' : 'empty';
       return `<div class="week-cell ${cls}"><span class="wday">${day.slice(0,1)}</span><span class="wpct">${comp.pct > 0 ? comp.pct+'%' : '—'}</span></div>`;
     }).join('');
   }
+
+  // Helper: week label for offset
+  function weekLabel(offset) {
+    const mon = new Date();
+    mon.setDate(mon.getDate() - ((mon.getDay()+6)%7) - offset*7);
+    const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    const f = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `${f(mon)} – ${f(sun)}`;
+  }
+
+  // Find max weeks with data
+  function maxHistoryWeeks() {
+    for (let w = 1; w <= 52; w++) {
+      const key = getMondayStr(w);
+      const data = JSON.parse(localStorage.getItem('wt-history-' + key) || '{}');
+      if (!data[u] || Object.keys(data[u]).length === 0) return w - 1;
+    }
+    return 52;
+  }
+
+  // Current & this week stats for compare bar
+  const thisData = getWeekData(0);
+  const thisStats = countSets(thisData);
+  const streak = getStreak(u);
+  const maxWeeks = maxHistoryWeeks();
+
+  // Build browser week card
+  const browseData = getWeekData(profileWeekOffset);
+  const browseStats = countSets(browseData);
+  const isThisWeek = profileWeekOffset === 0;
+  const browseLabel = weekLabel(profileWeekOffset);
+  const hasData = browseStats.done > 0;
+
+  // Compare to adjacent week
+  const prevData = getWeekData(profileWeekOffset + 1);
+  const prevStats = countSets(prevData);
+  const hasPrev = prevStats.done > 0;
+  const trend = hasPrev
+    ? (browseStats.done >= prevStats.done ? '<span style="color:var(--green)">↑</span>' : '<span style="color:#e74c3c">↓</span>')
+    : '—';
 
   const lastWHtml = lastW
     ? `<div class="last-workout-row">
@@ -830,9 +904,7 @@ function openProfile(u) {
           <p>${lastW.day} · ${lastW.date}</p>
         </div>
       </div>`
-    : `<p class="no-data">No workouts logged yet this week.</p>`;
-
-  const hasLastWeek = lastStats.done > 0;
+    : `<p class="no-data">No workouts logged yet.</p>`;
 
   document.getElementById('profile-body').innerHTML = `
     <div class="profile-avatar-row">
@@ -840,44 +912,43 @@ function openProfile(u) {
       <div>
         <div class="profile-user-name">${name}</div>
         <div class="profile-user-sub">${sub}</div>
+        <div style="margin-top:6px;font-size:13px;color:var(--green-mid);font-weight:700">${streak > 0 ? '🔥 ' + streak + ' week streak' : 'Start your streak!'}</div>
       </div>
     </div>
 
     <div class="profile-section-label">Last Workout</div>
     <div class="stat-card">${lastWHtml}</div>
 
-    <div class="profile-section-label">This Week</div>
-    <div class="stat-card">
-      <div class="stat-card-title">Sets completed</div>
-      <div class="compare-row">
-        <div class="compare-box">
-          <div class="cb-val">${thisStats.done}</div>
-          <div class="cb-lbl">This week</div>
+    <div class="profile-section-label">Week History</div>
+    <div class="week-browser">
+      <div class="week-browser-nav">
+        <button class="week-nav-btn" onclick="browseWeek(1)" ${profileWeekOffset >= maxWeeks ? 'disabled' : ''}>‹</button>
+        <div class="week-browser-label">
+          ${isThisWeek ? '<span style="color:var(--green);font-weight:800">This Week</span>' : browseLabel}
+          ${isThisWeek ? '<span>Current</span>' : '<span>' + browseLabel + '</span>'}
         </div>
-        <div class="compare-box">
-          <div class="cb-val last-val">${hasLastWeek ? lastStats.done : '—'}</div>
-          <div class="cb-lbl">Last week</div>
-        </div>
-        <div class="compare-box">
-          <div class="cb-val" style="color:${thisStats.done >= lastStats.done && hasLastWeek ? 'var(--green)' : 'var(--muted)'}">
-            ${hasLastWeek && lastStats.done > 0 ? (thisStats.done >= lastStats.done ? '↑' : '↓') : '—'}
-          </div>
-          <div class="cb-lbl">vs last week</div>
-        </div>
+        <button class="week-nav-btn" onclick="browseWeek(-1)" ${profileWeekOffset <= 0 ? 'disabled' : ''}>›</button>
       </div>
+      <div class="week-grid">${hasData ? buildWeekGrid(browseData) : ''}</div>
+      ${!hasData ? '<div class="week-browser-empty">No workouts logged this week</div>' : ''}
+      ${hasData ? `<div class="week-browser-sets">
+        <div class="week-browser-stat"><div class="wbs-val">${browseStats.done}</div><div class="wbs-lbl">Sets done</div></div>
+        <div class="week-browser-stat"><div class="wbs-val">${browseStats.total > 0 ? Math.round(browseStats.done/browseStats.total*100)+'%' : '—'}</div><div class="wbs-lbl">Completion</div></div>
+        <div class="week-browser-stat"><div class="wbs-val">${trend}</div><div class="wbs-lbl">vs prior week</div></div>
+      </div>` : ''}
     </div>
-
-    <div class="profile-section-label">This Week's Days</div>
-    <div class="stat-card">
-      <div class="week-grid">${buildWeekGrid(thisData, u)}</div>
-    </div>
-
-    ${hasLastWeek ? `
-    <div class="profile-section-label">Last Week's Days</div>
-    <div class="stat-card">
-      <div class="week-grid">${buildWeekGrid(lastData, u)}</div>
-    </div>` : ''}
   `;
+}
+
+function browseWeek(direction) {
+  profileWeekOffset += direction;
+  if (profileWeekOffset < 0) profileWeekOffset = 0;
+  renderProfile();
+  // Scroll profile body to week browser
+  setTimeout(() => {
+    const wb = document.querySelector('.week-browser');
+    if (wb) wb.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }, 50);
 }
 
 function closeProfile() {
