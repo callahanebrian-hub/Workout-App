@@ -150,8 +150,6 @@
   .video-modal-inner { width: 100%; max-width: 440px; }
   .video-modal-title { color: white; font-size: 15px; font-weight: 600; margin-bottom: 12px; text-align: center; }
   .video-close { background: rgba(255,255,255,0.15); border: none; color: white; font-size: 13px; font-weight: 600; padding: 10px 24px; border-radius: 20px; cursor: pointer; margin-top: 14px; width: 100%; font-family: inherit; }
-  .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; border-radius: 12px; overflow: hidden; background: #000; }
-  .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
 
   /* Profile button on user card */
   .profile-btn { margin-top: 6px; background: none; border: none; color: var(--green-mid); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 0; text-decoration: underline; }
@@ -337,14 +335,11 @@
   .share-week-btn { width: 100%; background: var(--green); color: white; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .share-week-btn svg { width: 16px; height: 16px; fill: white; }
 
-  /* ── FLOATING TIMER BUTTON ── */
-  .float-timer-btn { position: fixed; bottom: 28px; right: 20px; width: 58px; height: 58px; border-radius: 50%; background: var(--green); border: none; box-shadow: 0 4px 16px rgba(28,78,63,0.35); cursor: pointer; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 2px; z-index: 200; transition: transform 0.15s; }
-  .float-timer-btn.visible { display: flex; }
-  .float-timer-btn:active { transform: scale(0.92); }
-  .float-timer-icon { width: 22px; height: 22px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; }
-  .float-timer-label { color: white; font-size: 9px; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; }
-  .float-timer-btn.running { background: #c0392b; }
-  .float-timer-btn.running .float-timer-label { content: 'STOP'; }
+  /* ── HEADER TIMER BUTTON ── */
+  .header-timer-btn { background: rgba(255,255,255,0.15); border: none; color: white; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; transition: background 0.15s; }
+  .header-timer-btn:active { background: rgba(255,255,255,0.25); }
+  .header-timer-btn.running { background: #c0392b; }
+  .header-timer-btn svg { width: 14px; height: 14px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; }
 
   /* ── STANDALONE TIMER SHEET ── */
   .standalone-timer-overlay { display: none; position: fixed; inset: 0; z-index: 998; align-items: flex-end; justify-content: center; pointer-events: none; }
@@ -381,6 +376,35 @@
   .standalone-add-time { display: flex; gap: 8px; margin-bottom: 16px; }
   .add-time-btn { flex: 1; background: var(--bg); border: 2px solid var(--gray); border-radius: 12px; padding: 10px; font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer; font-family: inherit; }
   .add-time-btn:active { background: var(--gray); }
+
+  /* ── STAGGERED CARD ENTRANCE ── */
+  @keyframes cardIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  .exercise-card { animation: cardIn 0.35s ease both; }
+
+  /* ── PROGRESS RING ANIMATE FROM 0 ── */
+  @keyframes ringFill { from { stroke-dashoffset: 175.9; } }
+  .ring-fill-anim { animation: ringFill 0.8s cubic-bezier(0.4,0,0.2,1) both; }
+
+  /* ── SET RIPPLE ── */
+  @keyframes ripple { 0% { transform: scale(0); opacity: 0.4; } 100% { transform: scale(2.5); opacity: 0; } }
+  .set-btn { overflow: hidden; position: relative; }
+  .set-ripple { position: absolute; border-radius: 50%; background: var(--green-light); pointer-events: none; animation: ripple 0.5s ease-out forwards; }
+
+  /* ── GREETING FADE IN ── */
+  @keyframes greetIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .header-greeting { animation: greetIn 0.4s ease both; color: rgba(255,255,255,0.85); font-size: 13px; margin-bottom: 2px; font-weight: 500; }
+
+  /* ── DAY PILL BOUNCE ── */
+  @keyframes pillBounce { 0% { transform: scale(0.8); opacity: 0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+  .day-label-pill { animation: pillBounce 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+  /* ── STREAK BANNER SLIDE IN ── */
+  @keyframes bannerIn { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
+  .streak-banner { animation: bannerIn 0.4s ease 0.1s both; }
+
+  /* ── WEEK BROWSER CARD FADE ── */
+  @keyframes wbIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .week-browser { animation: wbIn 0.3s ease both; }
 </style>
 </head>
 <body>
@@ -389,21 +413,6 @@
 <div class="video-modal" id="video-modal">
   <div class="video-modal-inner">
     <div class="video-modal-title" id="video-modal-title"></div>
-    <div class="video-wrapper" id="video-wrapper">
-      <iframe id="video-iframe" allowfullscreen allow="autoplay; encrypted-media" playsinline
-        onload="checkIframeLoad(this)"
-        onerror="showVideoFallback()">
-      </iframe>
-      <div id="video-blocked" style="display:none;position:absolute;inset:0;background:#111;border-radius:12px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
-        <div style="color:rgba(255,255,255,0.5);font-size:13px;text-align:center;line-height:1.5;">This video can't be played<br>inside the app.</div>
-        <a id="video-fallback-btn" href="" target="_blank"
-          style="background:white;color:#1A1A1A;font-size:14px;font-weight:700;padding:12px 24px;border-radius:12px;text-decoration:none;display:flex;align-items:center;gap:8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="#c0392b"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
-          Open in YouTube
-        </a>
-        <button onclick="closeVideo()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit;">Go back to workout</button>
-      </div>
-    </div>
     <button class="video-close" onclick="closeVideo()">✕ Close</button>
   </div>
 </div>
@@ -412,16 +421,7 @@
 
 
 
-<!-- Floating timer button -->
-<button class="float-timer-btn" id="float-timer-btn" onclick="openStandaloneTimer()">
-  <svg class="float-timer-icon" viewBox="0 0 24 24">
-    <circle cx="12" cy="13" r="8"/>
-    <path d="M12 9v4l2.5 2.5"/>
-    <path d="M9.5 3h5"/>
-    <path d="M12 3v2"/>
-  </svg>
-  <span class="float-timer-label" id="float-lbl">Timer</span>
-</button>
+
 
 <!-- Standalone timer sheet -->
 <div class="standalone-timer-overlay" id="standalone-overlay">
@@ -575,9 +575,14 @@
           <div class="timer-indicator-dot"></div>
           <span class="timer-indicator-text" id="timer-indicator-text">0:00</span>
         </div>
+        <button class="header-timer-btn" id="float-timer-btn" onclick="openStandaloneTimer()">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9.5 3h5"/><path d="M12 3v2"/></svg>
+          <span id="float-lbl">Timer</span>
+        </button>
         <button class="switch-btn" onclick="switchUser()">Switch User</button>
       </div>
     </div>
+    <div class="header-greeting" id="hgreeting"></div>
     <h2>Weekly Plan</h2>
     <div class="header-sub" id="wklabel"></div>
   </div>
@@ -650,40 +655,40 @@ const BRIAN_BACK_SHLD_BI = [
 
 // Wed = Legs only
 const BRIAN_LEGS = [
-  {id:"lg1", name:"Dumbbell Goblet Squat", muscle:"Quads / Glutes", sets:3, reps:"8–10", eq:"dumbbell",
+  {id:"lg1", name:"Dumbbell Goblet Squat", muscle:"Quads / Glutes", sets:2, reps:"8–10", eq:"dumbbell",
    desc:"Hold one heavy dumbbell vertically at chest. Feet shoulder-width, toes slightly out. Sit deep between heels, knees tracking over toes. Press back up through heels. Primary squat movement — go as heavy as possible with clean form.",
    video:"1lx5o8UM7_c|380|404"},
-  {id:"lg2", name:"Cable Romanian Deadlift", muscle:"Hamstrings / Glutes", sets:3, reps:"10–12", eq:"cable",
+  {id:"lg2", name:"Cable Romanian Deadlift", muscle:"Hamstrings / Glutes", sets:2, reps:"10–12", eq:"cable",
    desc:"Low pulley, straight bar or rope. Stand facing cable. Hinge at hips pushing them back, feeling a deep hamstring stretch. Drive hips forward to return. Cable keeps tension at the bottom — great hamstring builder.",
    video:"https://www.youtube.com/shorts/4kqWSx3yO7A"},
-  {id:"lg3", name:"Dumbbell Hip Thrust", muscle:"Glutes", sets:3, reps:"10–12", eq:"dumbbell",
+  {id:"lg3", name:"Dumbbell Hip Thrust", muscle:"Glutes", sets:2, reps:"10–12", eq:"dumbbell",
    desc:"Upper back on bench, heavy dumbbell across hips. Drive hips up to full extension. Squeeze glutes hard and hold 1 second at top. Lower under control. Treat this as a strength movement — go heavy.",
    video:"https://www.youtube.com/shorts/CvuVYMFd11g"},
-  {id:"lg4", name:"Dumbbell Walking Lunge", muscle:"Quads / Glutes", sets:3, reps:"12 each leg", eq:"dumbbell",
+  {id:"lg4", name:"Dumbbell Walking Lunge", muscle:"Quads / Glutes", sets:2, reps:"12 each leg", eq:"dumbbell",
    desc:"Hold dumbbells at sides. Controlled step forward, lower back knee toward floor, front thigh parallel. Push through front heel to step into next rep. Torso upright throughout.",
    video:"1lx5o8UM7_c|415|425"},
-  {id:"lg5", name:"Cable Pull-Through", muscle:"Glutes / Hamstrings", sets:3, reps:"15", eq:"cable",
+  {id:"lg5", name:"Cable Pull-Through", muscle:"Glutes / Hamstrings", sets:2, reps:"15", eq:"cable",
    desc:"Stand facing away from cable, rope between legs at low pulley. Hinge forward at hips letting rope go back. Drive hips forward to return. Excellent glute activation and mind-muscle connection.",
    video:"https://www.youtube.com/shorts/h1BEcRXkvxs"},
-  {id:"lg6", name:"Cable Standing Leg Curl", muscle:"Hamstrings", sets:3, reps:"12 each", eq:"cable",
+  {id:"lg6", name:"Cable Standing Leg Curl", muscle:"Hamstrings", sets:2, reps:"12 each", eq:"cable",
    desc:"Ankle strap on low cable. Stand facing machine, hold for balance. Curl heel toward glute squeezing hamstring at top. Lower slowly — the eccentric is where the growth is. Complete all reps one leg then switch.",
    video:"https://www.youtube.com/shorts/UkU8fYyFzLU"},
-  {id:"lg7", name:"Dumbbell Bulgarian Split Squat", muscle:"Legs / Glutes", sets:3, reps:"8 each leg", eq:"dumbbell",
+  {id:"lg7", name:"Dumbbell Bulgarian Split Squat", muscle:"Legs / Glutes", sets:2, reps:"8 each leg", eq:"dumbbell",
    desc:"Rear foot on bench, front foot out. Lower until front thigh parallel. Drive through front heel. Harder than it looks — use less weight than you think. Builds single-leg strength and fixes imbalances.",
    video:"https://www.youtube.com/shorts/or1frhkjBDc"},
-  {id:"lg8", name:"Cable Calf Raise", muscle:"Calves", sets:3, reps:"12–15", eq:"cable",
+  {id:"lg8", name:"Cable Calf Raise", muscle:"Calves", sets:2, reps:"12–15", eq:"cable",
    desc:"Hold cable handle lightly for balance or resistance. Stand on edge of a step. Full stretch at the bottom, full contraction and pause at the top. Don't bounce.",
    video:"https://www.youtube.com/shorts/wdOkFomQNp8"},
-  {id:"lg9", name:"Cable Assisted Lunge", muscle:"Legs / Glutes", sets:3, reps:"10 each leg", eq:"cable",
+  {id:"lg9", name:"Cable Assisted Lunge", muscle:"Legs / Glutes", sets:2, reps:"10 each leg", eq:"cable",
    desc:"Set Centr 2 pulley low. Hold the handle at your side or in front for balance assistance. Step forward into a lunge, lowering back knee toward floor. The cable provides light assistance and keeps you honest on form. Great for building lunge confidence with heavier depth.",
    video:"1lx5o8UM7_c|446|460"},
-  {id:"lg10", name:"Cable Crunch", muscle:"Abs", sets:3, reps:"15", eq:"cable",
+  {id:"lg10", name:"Cable Crunch", muscle:"Abs", sets:2, reps:"15", eq:"cable",
    desc:"Kneel facing cable, rope attachment at high pulley beside head. Pull rope down crunching elbows toward knees, rounding the spine hard. The cable adds real load that bodyweight can't match. This is the bench press of ab training — go heavy enough to feel it.",
    video:"https://www.youtube.com/shorts/ByZJuk85YuE"},
-  {id:"lg11", name:"Hanging Knee Raise", muscle:"Lower Abs", sets:3, reps:"15", eq:"pullup",
+  {id:"lg11", name:"Hanging Knee Raise", muscle:"Lower Abs", sets:2, reps:"15", eq:"pullup",
    desc:"Hang from pull-up bar with overhand grip. Bring knees up toward chest, rounding the lower back at the top. Lower slowly — don't just drop. Progress to straight leg raises when this feels easy. Best lower ab exercise you can do.",
    video:"https://www.youtube.com/shorts/T18jAj05SVM"},
-  {id:"lg12", name:"Dead Bug", muscle:"Core Stability", sets:3, reps:"10 each side", eq:"bw",
+  {id:"lg12", name:"Dead Bug", muscle:"Core Stability", sets:2, reps:"10 each side", eq:"bw",
    desc:"Lie on back, arms pointing at ceiling, knees at 90°. Slowly extend opposite arm and leg toward the floor while pressing your lower back flat. Return and switch sides. Slow and controlled — never let your lower back arch off the floor. Builds deep core stability.",
    video:"https://www.youtube.com/shorts/5c-vucY3beU"},
 ];
@@ -836,17 +841,62 @@ if (savedWeek !== thisWeek) {
 }
 
 // ── STATE ─────────────────────────────────────────────────
+// Progress is saved per-week AND per-day so each day persists independently
+// Key format: wt-v5-{weekMonday}-{user}-{day}
 let cu = null, cd = null;
-let sd = JSON.parse(localStorage.getItem('wt-v4') || '{}');
-function saveSd() { localStorage.setItem('wt-v4', JSON.stringify(sd)); }
-function initU(u) { if (!sd[u]) sd[u] = {}; }
-function isDone(u,eid,i) { return !!(sd[u]&&sd[u][eid]&&sd[u][eid][i]); }
-function toggleS(u,eid,i) { initU(u); if(!sd[u][eid])sd[u][eid]={}; sd[u][eid][i]=!sd[u][eid][i]; saveSd(); }
-function setsDone(u,ex) { let c=0; for(let i=0;i<ex.sets;i++) if(isDone(u,ex.id,i))c++; return c; }
+
+function getDayKey(u, day) {
+  return 'wt-v5-' + thisWeek + '-' + u + '-' + day;
+}
+
+function getDayData(u, day) {
+  return JSON.parse(localStorage.getItem(getDayKey(u, day)) || '{}');
+}
+
+function saveDayData(u, day, data) {
+  localStorage.setItem(getDayKey(u, day), JSON.stringify(data));
+  // Also save a combined snapshot for history/profile
+  const allData = JSON.parse(localStorage.getItem('wt-v4') || '{}');
+  if (!allData[u]) allData[u] = {};
+  Object.assign(allData[u], data);
+  localStorage.setItem('wt-v4', JSON.stringify(allData));
+}
+
+function initU(u) {}
+
+function isDone(u,eid,i) {
+  // Find which day this exercise belongs to
+  const day = Object.keys(EX[u]).find(d => EX[u][d].some(e => e.id === eid));
+  if (!day) return false;
+  const data = getDayData(u, day);
+  return !!(data[eid] && data[eid][i]);
+}
+
+function toggleS(u,eid,i) {
+  const day = Object.keys(EX[u]).find(d => EX[u][d].some(e => e.id === eid));
+  if (!day) return;
+  const data = getDayData(u, day);
+  if (!data[eid]) data[eid] = {};
+  data[eid][i] = !data[eid][i];
+  saveDayData(u, day, data);
+}
+
+function setsDone(u,ex) {
+  const day = Object.keys(EX[u]).find(d => EX[u][d].some(e => e.id === ex.id));
+  if (!day) return 0;
+  const data = getDayData(u, day);
+  let c=0; for(let i=0;i<ex.sets;i++) if(data[ex.id]&&data[ex.id][i])c++; return c;
+}
+
 function allDone(u,ex) { return setsDone(u,ex)===ex.sets; }
+
 function dayProg(u,day) {
+  const data = getDayData(u, day);
   let total=0, done=0;
-  EX[u][day].forEach(ex=>{ total+=ex.sets; done+=setsDone(u,ex); });
+  EX[u][day].forEach(ex=>{
+    total+=ex.sets;
+    for(let i=0;i<ex.sets;i++) if(data[ex.id]&&data[ex.id][i]) done++;
+  });
   return {total,done};
 }
 
@@ -855,7 +905,7 @@ function selectUser(u) {
   document.getElementById('user-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   // Show floating timer for all users
-  document.getElementById('float-timer-btn').classList.add('visible');
+  // header timer always visible
   const isA = u==='ankita';
   document.getElementById('hav').textContent = isA?'A':'B';
   document.getElementById('hav').style.background = isA?'#8A2C5F':'#1C4E3F';
@@ -865,6 +915,9 @@ function selectUser(u) {
   const sun=new Date(mon); sun.setDate(mon.getDate()+6);
   const f=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   document.getElementById('wklabel').textContent=`Week of ${f(mon)} – ${f(sun)}`;
+  const hr = new Date().getHours();
+  const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('hgreeting').textContent = `${greet}, ${isA?'Ankita':'Brian'}`;
   const ti=(new Date().getDay()+6)%7;
   cd = DAYS[Math.min(ti,6)];
   buildTabs(); renderDay(cd); updateLastDone(cu, cd);
@@ -874,7 +927,7 @@ function switchUser() {
   cu=null; cd=null;
   document.getElementById('app').style.display='none';
   document.getElementById('user-screen').style.display='flex';
-  document.getElementById('float-timer-btn').classList.remove('visible');
+  // header timer always visible
   closeStandaloneTimer();
 }
 
@@ -980,7 +1033,7 @@ function renderDay(day, dir='') {
     <div class="progress-ring-wrap">
       <svg class="ring-svg" width="72" height="72" viewBox="0 0 72 72">
         <circle class="ring-bg" cx="36" cy="36" r="${radius}"/>
-        <circle class="ring-fill" id="prog-fill" cx="36" cy="36" r="${radius}"
+        <circle class="ring-fill ring-fill-anim" id="prog-fill" cx="36" cy="36" r="${radius}"
           stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
       </svg>
       <div class="ring-text-wrap">
@@ -990,7 +1043,7 @@ function renderDay(day, dir='') {
       </div>
     </div>`;
 
-  exs.forEach(ex=>{
+  exs.forEach((ex,exIdx)=>{
     const dc=setsDone(cu,ex), ad=allDone(cu,ex);
     const eq=EQ_META[ex.eq]||{label:ex.eq,cls:''};
     let pills=`<span class="ex-muscle">${ex.muscle}</span><span class="ex-pill">${ex.sets} sets · ${ex.reps} reps</span><span class="eq-tag ${eq.cls}">${eq.label}</span>`;
@@ -1018,7 +1071,7 @@ function renderDay(day, dir='') {
       </div>`;
     }
 
-    h+=`<div class="exercise-card ${ad?'all-done':''} day-${dayColorCls}" id="card-${ex.id}">
+    h+=`<div class="exercise-card ${ad?'all-done':''} day-${dayColorCls}" id="card-${ex.id}" style="animation-delay:${exIdx*60}ms">
       <div class="ex-header" onclick="toggleExp('${ex.id}')">
         <div class="ex-info">
           <div class="ex-name" id="name-${ex.id}">${ex.name}</div>
@@ -1078,6 +1131,14 @@ function tapSet(eid, idx) {
     setTimeout(()=>btnEl.classList.remove('just-done'),400);
     // Haptic feedback
     if(navigator.vibrate) navigator.vibrate(30);
+    // Ripple effect
+    const rect = btnEl.getBoundingClientRect();
+    const rip = document.createElement('span');
+    rip.className = 'set-ripple';
+    const size = Math.max(btnEl.offsetWidth, btnEl.offsetHeight);
+    rip.style.cssText = `width:${size}px;height:${size}px;left:${(btnEl.offsetWidth-size)/2}px;top:${(btnEl.offsetHeight-size)/2}px`;
+    btnEl.appendChild(rip);
+    setTimeout(()=>rip.remove(), 500);
     // Rest timer only fires for Ankita
     if(cu === 'ankita') {
       const exForTimer = EX[cu][cd].find(e=>e.id===eid);
@@ -1120,58 +1181,18 @@ function tapSet(eid, idx) {
 
 // ── VIDEO PLAYER ──────────────────────────────────────────
 function openVideo(url, name) {
-  // Convert pipe format to a watch URL for direct opening
   let watchUrl = url;
   if (url.includes('|')) {
     const parts = url.split('|');
     const vid = parts[0], start = parts[1]||0;
     watchUrl = `https://www.youtube.com/watch?v=${vid}&t=${start}s`;
   }
-  // Open directly in YouTube
   window.open(watchUrl, '_blank');
 }
 
-function closeVideo() {
-  document.getElementById('video-modal').classList.remove('open');
-  document.getElementById('video-iframe').src = '';
-  // Reset blocked state
-  document.getElementById('video-blocked').style.display = 'none';
-  document.getElementById('video-iframe').style.display = 'block';
-}
+function closeVideo() {}
 
-function showVideoFallback() {
-  document.getElementById('video-blocked').style.display = 'flex';
-  document.getElementById('video-iframe').style.display = 'none';
-}
-
-function checkIframeLoad(iframe) {
-  // YouTube sets the title to "YouTube" on a blocked/error page
-  // We can't read cross-origin title, but we can detect certain patterns
-  try {
-    // If we can access contentDocument it's same-origin (won't happen with YT)
-    // This fires on successful load — nothing to do
-  } catch(e) {
-    showVideoFallback();
-  }
-}
-
-// Listen for YouTube's postMessage error events
-window.addEventListener('message', function(e) {
-  if (!e.data) return;
-  try {
-    const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-    // YouTube player error codes: 100, 101, 150 = embedding not allowed
-    if (data.event === 'onError' &&
-        (data.info === 100 || data.info === 101 || data.info === 150 || data.info === 153)) {
-      showVideoFallback();
-    }
-  } catch(e) {}
-});
-
-// Close modal on backdrop tap
-document.getElementById('video-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeVideo();
-});
+document.getElementById('video-modal').addEventListener('click', function(e) { if (e.target === this) closeVideo(); });
 
 // ── PROFILE / HISTORY ─────────────────────────────────────
 function updateLastDone(u, day) {
